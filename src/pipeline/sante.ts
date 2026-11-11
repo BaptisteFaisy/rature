@@ -32,7 +32,12 @@ export function urlSante(proxy: string): string {
  * laissaient une chaîne vide, et la sonde partait sur `https://<pages>/health`.
  */
 function estSondable(proxy: string): boolean {
-  return proxy.length > 0 && !proxy.startsWith('/') && proxy !== PROXY_PAR_DEFAUT
+  // Seule une adresse absolue possède un `/health` atteignable en CORS. Une
+  // adresse vide ou relative (repli same-origin d'un déploiement Vercel/Worker)
+  // ne se sonde pas : on rend « inconnue » plutôt qu'un « indisponible » faux.
+  // Attention : PROXY_PAR_DEFAUT est ABSOLU en production (VITE_PROXY_URL est
+  // injecté au build) — il doit donc rester sondable.
+  return /^https?:\/\//.test(proxy)
 }
 
 function attendre(ms: number): Promise<void> {
