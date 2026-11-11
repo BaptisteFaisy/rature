@@ -27,10 +27,12 @@ describe('sonde du proxy (lot 2)', () => {
     await expect(sonderProxy('https://h.modal.run/analyze')).resolves.toBe('ko')
   })
 
-  it('proxy same-origin → inconnue, sans aucun appel réseau', async () => {
+  it('proxy same-origin ou adresse vide → inconnue, sans aucun appel réseau', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     await expect(sonderProxy('/api/analyze')).resolves.toBe('inconnue')
+    await expect(sonderProxy('')).resolves.toBe('inconnue')
+    await expect(sonderProxy('/health')).resolves.toBe('inconnue')
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
