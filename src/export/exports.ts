@@ -3,8 +3,9 @@
  * Logique pure : aucune dépendance au DOM, testée dans `tests/export.test.ts`.
  */
 import { libelleDe } from '../domain/taxonomy'
+import type { CodeErreur } from '../domain/taxonomy'
 import { classement, phraseSynthese, pourcentage, typeDominant } from '../domain/profil'
-import type { Diagnostic, Profil } from '../domain/types'
+import type { Diagnostic, Profil, StatsClasse } from '../domain/types'
 
 function csvCell(valeur: string | number): string {
   const texte = String(valeur)
@@ -58,6 +59,20 @@ export function ficheEnMarkdown(profil: Profil, diagnostics: Diagnostic[]): stri
   }
 
   lignes.push('', '_Généré localement par Raturé. Aucune copie n’est conservée._')
+  return lignes.join('\n')
+}
+
+/** Statistique de classe → CSV (RF-21 côté professeur). */
+export function statsEnCsv(stats: StatsClasse): string {
+  const total = Object.values(stats.parType).reduce((somme, n) => somme + n, 0)
+  const lignes: string[] = ['nb_copies,code,libelle,occurrences,part_pourcent']
+  for (const [code, n] of Object.entries(stats.parType)) {
+    if (n === 0) continue
+    const part = total === 0 ? 0 : Math.round((n / total) * 100)
+    lignes.push(
+      [csvCell(stats.nbCopies), csvCell(code), csvCell(libelleDe(code as CodeErreur)), csvCell(n), csvCell(part)].join(','),
+    )
+  }
   return lignes.join('\n')
 }
 

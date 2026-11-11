@@ -18,5 +18,5 @@
     "noUncheckedIndexedAccess": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "api", "tests", "vite.config.ts"]
+  "include": ["src", "api", "tests", "vite.config.ts", "vitest.config.ts"]
 }
