@@ -40,13 +40,20 @@ export const MODELE_PAR_DEFAUT = 'ag/gemini-4-carbon'
 
 /**
  * Chaîne de repli : InferHub est une place de marché, un modèle peut être sans
- * capacité (503) ou hors enchère (402) d'une minute à l'autre. On essaie le
- * suivant plutôt que de rendre une erreur à l'élève.
+ * capacité (503) ou hors enchère (402) d'une minute à l'autre — mesuré le
+ * 11 novembre : 5 des 6 modèles vision en 503 simultanément, le sixième
+ * répondait. On descend donc toute la famille `ag/` (la seule qui réponde sans
+ * paramètre d'enchère) avant de rendre la main.
+ *
+ * Ordre : du plus rapide au plus lent (16 s → 50 s sur une copie du corpus).
  */
 export const CHAINE_MODELES = [
   'ag/gemini-4-carbon',
   'ag/claude-sonnet-4-6',
+  'ag/gemini-4-argon',
+  'ag/claude-sonnet-5-5',
   'ag/gemini-3.8-flash-high',
+  'ag/claude-opus-4-6-thinking',
 ]
 
 /** Amont [OI]-compatible utilisé par le proxy edge. */

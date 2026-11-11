@@ -105,7 +105,8 @@ export default async function handler(req: Requete, res: Reponse): Promise<void>
 
   const visiteur = identifiantVisiteur(req)
   if (!quota.autoriser(visiteur, Date.now())) {
-    return repondre(res, 429, { erreur: "Quota d'analyse atteint. Réessaie plus tard ou utilise ta propre clé." }, debut)
+    // `quota: proxy` distingue notre plafond d'une limite de débit amont.
+    return repondre(res, 429, { erreur: 'Quota du proxy atteint pour cette heure. Réessaie plus tard.', quota: 'proxy' }, debut)
   }
 
   let corps: string
@@ -124,6 +125,9 @@ export default async function handler(req: Requete, res: Reponse): Promise<void>
     })
     const data = await reponse.json()
     if (!reponse.ok) {
+      if (reponse.status === 429) {
+        return repondre(res, 429, { erreur: 'Limite de débit du fournisseur de modèles : réessaie dans une minute.' }, debut)
+      }
       const message = (data as { error?: { message?: string } })?.error?.message ?? 'Amont indisponible.'
       return repondre(res, reponse.status, { erreur: message }, debut)
     }

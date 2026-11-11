@@ -115,8 +115,13 @@ def analyze():
 
         ip = request.headers.get("x-forwarded-for", "inconnu").split(",")[0].strip()
         if not autoriser(_empreinte(ip), time.time()):
+            # `quota: proxy` distingue notre plafond d'une limite de débit amont :
+            # le client n'affiche le recours BYOK que dans ce cas.
             return JSONResponse(
-                {"erreur": "Quota d'analyse atteint. Réessaie plus tard ou utilise ta propre clé."},
+                {
+                    "erreur": "Quota du proxy atteint pour cette heure. Réessaie plus tard.",
+                    "quota": "proxy",
+                },
                 status_code=429,
             )
 
@@ -137,6 +142,11 @@ def analyze():
 
         if reponse.status_code != 200:
             _journal(reponse.status_code, debut)
+            if reponse.status_code == 429:
+                return JSONResponse(
+                    {"erreur": "Limite de débit du fournisseur de modèles : réessaie dans une minute."},
+                    status_code=429,
+                )
             return JSONResponse({"erreur": _message_amont(reponse.text)}, status_code=reponse.status_code)
 
         texte = _extraire_texte(reponse.text)
