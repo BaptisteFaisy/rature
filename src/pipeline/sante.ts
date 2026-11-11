@@ -25,8 +25,14 @@ export function urlSante(proxy: string): string {
   return `${base}/health`
 }
 
-function estLocal(proxy: string): boolean {
-  return proxy === PROXY_PAR_DEFAUT || proxy.startsWith('/api')
+/**
+ * Un proxy same-origin (ou une adresse vide) n'a pas de `/health` déployé :
+ * sonder donnerait un 404 de l'hébergeur statique, donc un « indisponible »
+ * mensonger. Bug réel du 11/11 : les réglages chargés après le premier rendu
+ * laissaient une chaîne vide, et la sonde partait sur `https://<pages>/health`.
+ */
+function estSondable(proxy: string): boolean {
+  return proxy.length > 0 && !proxy.startsWith('/') && proxy !== PROXY_PAR_DEFAUT
 }
 
 function attendre(ms: number): Promise<void> {
@@ -46,8 +52,7 @@ async function sonderUneFois(proxy: string): Promise<SanteProxy> {
 }
 
 export async function sonderProxy(proxy = PROXY_PAR_DEFAUT): Promise<SanteProxy> {
-  // Un proxy same-origin n'a pas de `/health` déployé : on ne ment pas.
-  if (estLocal(proxy)) return 'inconnue'
+  if (!estSondable(proxy)) return 'inconnue'
   for (let essai = 1; essai <= TENTATIVES; essai += 1) {
     const etat = await sonderUneFois(proxy)
     if (etat === 'ok' || essai === TENTATIVES) return etat

@@ -111,8 +111,10 @@ export function RatureProvider({ children }: { children: ReactNode }) {
     })()
   }, [])
 
-  // Sonde du proxy au chargement, puis à chaque changement d'adresse.
-  const proxyActif = etat.reglages.proxy
+  // Sonde du proxy au chargement, puis à chaque changement d'adresse. On sonde
+  // l'adresse EFFECTIVE (repli inclus) : la valeur brute des réglages est vide
+  // tant que l'utilisateur n'a rien saisi.
+  const proxyActif = transportDe(etat.reglages).proxy
   useEffect(() => {
     void sonderProxy(proxyActif).then((santeProxy) => {
       setEtat((precedent) => ({ ...precedent, santeProxy }))
