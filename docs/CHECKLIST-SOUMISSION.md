@@ -17,8 +17,15 @@ Les soumissions en retard ne sont pas acceptées.
 - [x] Les outils IA sont déclarés ([`DECLARATION-IA.md`](DECLARATION-IA.md))
 - [x] Le parcours complet est démontrable **hors ligne** (mode démo : réponses du modèle
       enregistrées, bouton sur l'accueil) — vérifié sur la démo publique
+- [x] Le parcours complet fonctionne **sur la démo publique, sans clé côté navigateur** :
+      photo → proxy Modal → InferHub → 3 fautes typées (E06, E07, E99) → exercice validé par le
+      garde-fou → profil mis à jour. Mesuré le 11 novembre à 22 h 27 sur une copie **dégradée**
+      (rotation, lumière inégale, bruit) : dominant conforme, ~40 s, 6 appels sur 8 en 503 absorbés
+      par la chaîne de repli. Détails : [`VALIDATION-MODELE.md`](VALIDATION-MODELE.md)
 - [ ] Une **vraie** copie corrigée photographiée produit un diagnostic typé correct en < 20 s
-      → à mesurer sur 5 copies réelles + 2 copies propres (protocole : [`../corpus/README.md`](../corpus/README.md))
+      → reste à mesurer sur 5 copies réelles + 2 copies propres (protocole :
+      [`../corpus/README.md`](../corpus/README.md)). Le seuil des 20 s dépend de l'amont :
+      16 s quand un fournisseur rapide est disponible, 40-90 s quand la chaîne doit rejouer
 - [ ] La vidéo ≤ 3 min est en ligne, publique, et se lance en navigation privée
 - [ ] La soumission est déposée sur Devpost avant le 15 nov 18h PT
 

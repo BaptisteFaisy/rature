@@ -92,6 +92,36 @@ Pour tenir les 20 s du cahier des charges, il faut un fournisseur dédié (une
 clé, un modèle, pas d'enchère) : c'est un changement de configuration
 (`RATURE_AMONT` + `RATURE_MODELE`), pas d'architecture.
 
+## Validation de bout en bout sur la démo publique (22 h 27, même jour)
+
+Parcours réel, sans aucune clé côté navigateur : photo téléversée sur
+<https://baptistefaisy.github.io/rature/> → proxy Modal → InferHub → diagnostic.
+
+Image envoyée : `copie-6-puissances-photo.png` (la **dégradée** : rotation 3°,
+lumière inégale, bruit, flou).
+
+| Étape | Résultat |
+|---|---|
+| Appels au proxy | 8 : `503, 503, 200` (extraction) puis `503, 503, 503, 503, 200` (classification) |
+| Diagnostic | 3 fautes : **E06** puissance (0,95), **E07** racine (0,98), **E99** non typée (0,75) |
+| Dominant | **E06** — conforme à la vérité terrain du manifeste |
+| E99 | affichée « signalée, non comptée dans le profil » ✅ |
+| Exercice | « Simplifie en écrivant sous la forme a × xⁿ : (3x⁴)² × x³ » — garde-fou validé sur les 3 critères |
+| Profil | « 50 % de tes erreurs : puissance mal gérée », barres E06/E07 |
+| Durée | ~40 s photo → diagnostic (dont la majeure partie en 503 rejoués) |
+
+Deux enseignements :
+
+1. **La chaîne de repli n'est pas théorique.** Sur 8 appels, 6 ont échoué ;
+   sans elle, l'analyse se serait arrêtée au premier 503. C'est la différence
+   entre une démo qui marche et une démo qui marche un soir sur trois.
+2. **Un `throw` sans `await` a failli tout casser.** `throw erreurDepuisReponse(…)`
+   sur une fonction `async` levait une **Promesse** : plus de repli
+   (`instanceof ErreurLLM` faux) et un message générique à l'écran
+   (`instanceof Error` faux). Invisible en test unitaire, trouvé uniquement en
+   test de bout en bout dans le navigateur — d'où les 5 tests de repli ajoutés
+   (`tests/llm-repli.test.ts`).
+
 ## Ce qui reste à valider
 
 - [ ] 5 **vraies** copies corrigées photographiées + 2 copies propres : même
