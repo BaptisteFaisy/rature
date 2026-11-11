@@ -36,7 +36,7 @@ systemctl --user status actions-runner-rature-01.service
 |---|---|---|
 | `ci` | typecheck strict, tests, build, taille des fichiers/fonctions, tests des gardes | ≤ 5 min |
 | `ci-budget` | garde-fou de configuration : aucun job ne déclare plus de 5 min | quelques secondes |
-| `couche0` | périmètre déclaré (`## Scope` en puces) + motifs interdits (pas de secret, pas de `--force`…) | ~17 s |
+| `couche0` | périmètre déclaré (`## Scope` en puces) + motifs interdits (pas de secret, pas de push forcé) | ~17 s |
 
 Le ruleset de `main` impose une PR, un historique linéaire et ces trois
 checks ; `enforce_admins` équivalent via le ruleset, donc **aucun push direct**,
