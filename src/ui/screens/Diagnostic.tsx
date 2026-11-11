@@ -1,35 +1,35 @@
+import { useRef, useState } from 'react'
 import type { Erreur } from '../../domain/types'
 import { BadgeCode } from '../components/BadgeCode'
 import { Bouton } from '../components/Bouton'
 import { Carte } from '../components/Carte'
+import { CopieAnnotee } from '../components/CopieAnnotee'
+import { ExplicationType } from '../components/ExplicationType'
 import { origineDemo } from '../../pipeline/demo'
 import { useRature } from '../../etat/useRature'
 
-/** Un rectangle jaune par faute, positionné en coordonnées relatives. */
-function SurimageErreur({ erreur, index }: { erreur: Erreur; index: number }) {
-  if (!erreur.zone) return null
+function LigneErreur({
+  erreur,
+  index,
+  selectionne,
+  onSelect,
+  refItem,
+}: {
+  erreur: Erreur
+  index: number
+  selectionne: boolean
+  onSelect: (index: number) => void
+  refItem: (element: HTMLLIElement | null) => void
+}) {
   return (
-    <span
-      key={erreur.zone.x + erreur.zone.y}
-      className="absolute rounded border-2 border-jaune bg-jaune/10"
-      style={{
-        left: `${erreur.zone.x * 100}%`,
-        top: `${erreur.zone.y * 100}%`,
-        width: `${erreur.zone.largeur * 100}%`,
-        height: `${erreur.zone.hauteur * 100}%`,
-      }}
-      aria-hidden="true"
+    <li
+      ref={refItem}
+      className={[
+        'cursor-pointer rounded-xl border p-3 transition',
+        selectionne ? 'border-jaune bg-surface-2' : 'border-bord bg-surface hover:border-jaune/50',
+      ].join(' ')}
+      onClick={() => onSelect(index)}
     >
-      <span className="absolute -top-3 left-0 rounded bg-jaune px-1 font-mono text-[11px] text-fond">
-        {index + 1}
-      </span>
-    </span>
-  )
-}
-
-function LigneErreur({ erreur, index }: { erreur: Erreur; index: number }) {
-  return (
-    <li className="rounded-xl border border-bord bg-surface p-3">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="font-mono text-xs text-muet">{index + 1}</span>
         <BadgeCode code={erreur.code} confiance={erreur.confiance} />
@@ -39,6 +39,11 @@ function LigneErreur({ erreur, index }: { erreur: Erreur; index: number }) {
       </div>
       <p className="font-mono text-sm text-texte/90">{erreur.ligne}</p>
       <p className="mt-1 text-sm text-muet">{erreur.explication}</p>
+      {selectionne ? (
+        <div className="mt-3 border-t border-bord pt-3">
+          <ExplicationType code={erreur.code} />
+        </div>
+      ) : null}
     </li>
   )
 }
@@ -46,6 +51,9 @@ function LigneErreur({ erreur, index }: { erreur: Erreur; index: number }) {
 /** Écran 4 : le diagnostic — où travailler, sans jugement. */
 export function Diagnostic() {
   const { resultat, aller, demo } = useRature()
+  const [selection, setSelection] = useState<number | null>(null)
+  const refs = useRef<(HTMLLIElement | null)[]>([])
+
   if (!resultat) {
     return (
       <div className="space-y-4">
@@ -58,6 +66,13 @@ export function Diagnostic() {
 
   const { diagnostic, imageAnonymisee, exercice, messageExercice } = resultat
   const copiePropre = diagnostic.nbFautes === 0
+
+  /** Clic sur une faute de la liste : sélection + zoom sur sa zone. */
+  const choisir = (index: number) => {
+    setSelection(index)
+    const zone = diagnostic.erreurs[index]?.zone
+    if (zone) refs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
 
   return (
     <div className="space-y-5">
@@ -72,30 +87,34 @@ export function Diagnostic() {
         </p>
       ) : null}
 
-      <Carte>
-        <div className="relative">
-          <img
-            src={imageAnonymisee}
-            alt="Ta copie, nom masqué"
-            className="max-h-[50vh] w-full rounded-lg object-contain"
-          />
-          {diagnostic.erreurs.map((erreur, index) => (
-            <SurimageErreur key={index} erreur={erreur} index={index} />
-          ))}
-        </div>
-      </Carte>
+      <CopieAnnotee
+        src={imageAnonymisee}
+        alt="Ta copie, nom masqué"
+        erreurs={diagnostic.erreurs}
+        selection={selection}
+        onSelect={(index) => setSelection(index === selection ? null : index)}
+      />
 
       {copiePropre ? (
         <Carte titre="C'est propre" ton="vert">
           <p className="text-sm text-muet">
-            Le professeur n’a annoté aucune faute. Rien à travailler aujourd’hui : ajoute une
-            autre copie pour affiner ton profil.
+            Le professeur n’a annoté aucune faute. Rien à travailler aujourd’hui : ajoute une autre
+            copie pour affiner ton profil.
           </p>
         </Carte>
       ) : (
         <ul className="space-y-3">
           {diagnostic.erreurs.map((erreur, index) => (
-            <LigneErreur key={index} erreur={erreur} index={index} />
+            <LigneErreur
+              key={index}
+              erreur={erreur}
+              index={index}
+              selectionne={selection === index}
+              onSelect={choisir}
+              refItem={(element) => {
+                refs.current[index] = element
+              }}
+            />
           ))}
         </ul>
       )}

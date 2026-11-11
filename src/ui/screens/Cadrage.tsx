@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { TAILLE_MAX_IMAGE_OCTETS } from '../../domain/config'
 import { Bouton } from '../components/Bouton'
+import { BandeauSante } from '../components/BandeauSante'
 import { Carte } from '../components/Carte'
 import { useRature } from '../../etat/useRature'
 
@@ -36,6 +37,7 @@ export function Cadrage() {
 
   return (
     <div className="space-y-5">
+      <BandeauSante />
       <h1 className="text-2xl font-semibold">Cadrage</h1>
       <p className="text-sm text-muet">
         Place la page entière dans le cadre, lumière naturelle si possible. Le nom sera masqué

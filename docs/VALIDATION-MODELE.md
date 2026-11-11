@@ -122,6 +122,25 @@ Deux enseignements :
    test de bout en bout dans le navigateur — d'où les 5 tests de repli ajoutés
    (`tests/llm-repli.test.ts`).
 
+## Chemin fusionné (un seul appel vision) — mesuré le 11 novembre, 23 h 45
+
+Le même corpus, mais avec l'analyse en **un seul appel** (annotations + typage) suivie de la
+seconde passe sur les fautes peu sûres :
+
+| Copie | Attendu | Obtenu | Fautes | Revues | Latence |
+|---|---|---|---|---|---|
+| 1 signes | E01 | **E01** | 3 | 0 | ~15 s |
+| 4 développement | E02 | **E02** | 3 | 0 | ~15 s |
+| 8 grandeurs | E09 | E10 ✗ | 4 | 0 | ~30 s |
+| 3 propre | aucune | **aucune** | **0** | 0 | **6,7 s** |
+| 6 puissances (dégradée) | E06 | **E06** | 4 | 0 | 56,1 s |
+
+**Précision 4/5, latence moyenne 22,0 s** — contre 53 à 92 s sur le chemin séparé. La fusion divise
+la latence par deux à trois sans perdre en justesse, et la copie propre reste à zéro faute en 6,7 s.
+Le seul échec est le même qu'avant (copie 8, ambiguïté arrondi/unité de la fixture).
+
+Banc : `tests/live/fusion.test.ts` (mêmes conditions : ignoré sans clé, chaîne de repli active).
+
 ## Ce qui reste à valider
 
 - [ ] 5 **vraies** copies corrigées photographiées + 2 copies propres : même

@@ -23,8 +23,14 @@ const ECRANS: Record<Ecran, () => JSX.Element> = {
 }
 
 /** Routeur maison : un état, huit écrans, aucune dépendance externe. */
+const ETIQUETTES_SANTE = {
+  ok: 'modèle en ligne',
+  ko: 'modèle indisponible',
+  inconnue: 'modèle non sondé',
+} as const
+
 export function Application() {
-  const { ecran } = useRature()
+  const { ecran, santeProxy } = useRature()
   const EcranActif = ECRANS[ecran]
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 py-6 sm:px-6">
@@ -33,7 +39,20 @@ export function Application() {
         <EcranActif />
       </main>
       <footer className="mt-8 border-t border-bord pt-4 text-xs text-muet">
-        Aucune copie n’est conservée · historique local · modèle : InferHub
+        Aucune copie n’est conservée · historique local ·{' '}
+        <span
+          aria-label={ETIQUETTES_SANTE[santeProxy]}
+          title={ETIQUETTES_SANTE[santeProxy]}
+          className={
+            santeProxy === 'ko'
+              ? 'text-jaune'
+              : santeProxy === 'ok'
+                ? 'text-vert'
+                : 'text-muet'
+          }
+        >
+          ● {ETIQUETTES_SANTE[santeProxy]}
+        </span>
       </footer>
     </div>
   )

@@ -6,6 +6,16 @@ export const SEUIL_CONFIANCE = 0.6
 /** §18.3 : deux tentatives maximum, puis message honnête. */
 export const MAX_TENTATIVES_EXERCICE = 2
 
+/**
+ * Seconde passe (lot 3) : une faute typée avec une confiance inférieure à ce
+ * seuil est revérifiée par un second appel, texte seul. Cible : les faux
+ * positifs, le risque que la spec qualifie de fatal (RNF-04).
+ */
+export const SEUIL_REVUE = 0.75
+
+/** Au-delà de ce nombre, on ne reverra que les moins sûres (latence bornée). */
+export const MAX_FAUTES_A_REVOIR = 5
+
 /** §18.2 : budget total photo → résultat. */
 export const BUDGET_PIPELINE_MS = 20_000
 

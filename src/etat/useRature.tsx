@@ -4,6 +4,8 @@ import { MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../domain/config'
 import { profilVide } from '../domain/profil'
 import type { Diagnostic, Profil, Progression, Reglages, ResultatAnalyse } from '../domain/types'
 import { clientDemo, fichierDemo } from '../pipeline/demo'
+import { sonderProxy } from '../pipeline/sante'
+import type { SanteProxy } from '../pipeline/sante'
 import { genererExerciceVerifie } from '../pipeline/exercise'
 import { analyserCopie } from '../pipeline/orchestrate'
 import type { Transport } from '../pipeline/llm'
@@ -40,6 +42,8 @@ type Etat = {
   occupe: boolean
   /** true quand le résultat affiché vient du mode démonstration. */
   demo: boolean
+  /** Santé du proxy : ok / ko (bascule vers la démo) / inconnue. */
+  santeProxy: SanteProxy
 }
 
 type Actions = {
@@ -76,6 +80,12 @@ function messageErreur(erreur: unknown): string {
   return erreur instanceof Error ? erreur.message : 'Analyse impossible. Réessaie dans un instant.'
 }
 
+/** Réseau ou amont épuisé : c'est le signal qui allume la pastille « ko ». */
+function amontMort(erreur: unknown): boolean {
+  const statut = erreur instanceof Error && 'statut' in erreur ? (erreur as { statut: number }).statut : 0
+  return [0, 502, 503, 504].includes(statut)
+}
+
 export function RatureProvider({ children }: { children: ReactNode }) {
   const [etat, setEtat] = useState<Etat>({
     ecran: ecranDepuisUrl(),
@@ -87,6 +97,7 @@ export function RatureProvider({ children }: { children: ReactNode }) {
     erreur: null,
     occupe: false,
     demo: false,
+    santeProxy: 'inconnue',
   })
 
   useEffect(() => {
@@ -99,6 +110,14 @@ export function RatureProvider({ children }: { children: ReactNode }) {
       setEtat((precedent) => ({ ...precedent, diagnostics, profil, reglages }))
     })()
   }, [])
+
+  // Sonde du proxy au chargement, puis à chaque changement d'adresse.
+  const proxyActif = etat.reglages.proxy
+  useEffect(() => {
+    void sonderProxy(proxyActif).then((santeProxy) => {
+      setEtat((precedent) => ({ ...precedent, santeProxy }))
+    })
+  }, [proxyActif])
 
   const aller = useCallback((ecran: Ecran) => {
     setEtat((precedent) => ({ ...precedent, ecran }))
@@ -142,7 +161,13 @@ export function RatureProvider({ children }: { children: ReactNode }) {
         // repersister le diagnostic (déjà fait dans onResultatPartiel).
         setEtat((precedent) => ({ ...precedent, occupe: false, resultat, demo: Boolean(options.demo) }))
       } catch (erreur) {
-        setEtat((precedent) => ({ ...precedent, occupe: false, erreur: messageErreur(erreur), ecran: 'cadrage' }))
+        setEtat((precedent) => ({
+          ...precedent,
+          occupe: false,
+          erreur: messageErreur(erreur),
+          ecran: 'cadrage',
+          ...(amontMort(erreur) ? { santeProxy: 'ko' } : {}),
+        }))
       }
     },
     [aller, etat.reglages],
