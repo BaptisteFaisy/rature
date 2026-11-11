@@ -1,4 +1,12 @@
 import { classement, occurrencesDominantes, phraseSynthese, typeDominant } from '../../domain/profil'
+import {
+  codesATracer,
+  failleDisparue,
+  messageProgression,
+  occurrencesParCopie,
+  tendance,
+} from '../../domain/progression'
+import { CourbeType } from '../components/CourbeType'
 import { profilEnCsv, ficheEnMarkdown } from '../../export/exports'
 import { telechargerCsv, telechargerMarkdown } from '../../export/telecharger'
 import { BarreType } from '../components/BarreType'
@@ -43,6 +51,28 @@ export function Profil() {
           ))}
         </div>
       </Carte>
+
+      {dominant ? (
+        <Carte titre="Évolution de ta faille" ton="vert">
+          {failleDisparue(diagnostics, dominant) ? (
+            <p className="mb-3 rounded-lg border border-vert/50 bg-vert/10 px-3 py-2 text-sm text-vert">
+              🎉 « {phraseSynthese(profil).split(':').pop()?.trim()} » ne revient plus sur tes 3
+              dernières copies. Belle progression.
+            </p>
+          ) : null}
+          <div className="space-y-3">
+            {codesATracer(profil).map((code) => (
+              <CourbeType
+                key={code}
+                code={code}
+                serie={occurrencesParCopie(diagnostics, code)}
+                tendance={tendance(occurrencesParCopie(diagnostics, code))}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muet">{messageProgression(profil, diagnostics)}</p>
+        </Carte>
+      ) : null}
 
       <Carte titre="Évolution">
         <ol className="space-y-1 text-sm">

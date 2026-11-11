@@ -120,3 +120,58 @@ export function parserExercice(texte: string): z.infer<typeof schemaExercice> {
 export function parserVerdict(texte: string): VerdictGardeFou {
   return parser<VerdictGardeFou>(schemaVerdict, texte, 'garde-fou')
 }
+
+/**
+ * Analyse fusionnée (lot 1) : un seul appel vision rend les annotations ET leur
+ * typage. Deux allers-retours de 20 à 50 s devenaient le point dur du produit ;
+ * un seul les divise par deux. Les règles (seuil, E99, pondération) restent
+ * appliquées localement, jamais par le modèle.
+ */
+export const schemaAnnotationFusionnee = schemaAnnotation.extend({
+  code: texteOuVide,
+  confiance: nombreOuZero,
+  explication: texteOuVide,
+})
+
+export const schemaAnalyse = z.object({
+  annotations: z.array(schemaAnnotationFusionnee).default([]),
+  copiePropre: booleen,
+  nomDetecte: texteOptionnel,
+})
+
+export type AnalyseBrute = z.infer<typeof schemaAnalyse>
+
+/** Découpe la réponse fusionnée en extraction + fautes brutes. */
+export function parserAnalyse(texte: string): {
+  annotations: AnalyseBrute['annotations']
+  copiePropre: boolean
+  nomDetecte?: string
+} {
+  const brut = parser<AnalyseBrute>(schemaAnalyse, texte, 'analyse')
+  const annotations = brut.annotations.filter((a) => a.annotation.length > 0)
+  return {
+    annotations,
+    // Même garde que le chemin séparé : pas d'annotation = copie propre.
+    copiePropre: annotations.length === 0 || brut.copiePropre,
+    ...(brut.nomDetecte ? { nomDetecte: brut.nomDetecte } : {}),
+  }
+}
+
+/** Seconde passe (lot 3) : verdict sur les fautes peu sûres. */
+export const schemaFauteRevue = z.object({
+  index: z.number(),
+  code: texteOuVide,
+  confiance: nombreOuZero,
+  explication: texteOuVide,
+  decision: texteOuVide,
+})
+
+export const schemaRevue = z.object({
+  fautes: z.array(schemaFauteRevue).default([]),
+})
+
+export type RevueBrute = z.infer<typeof schemaRevue>
+
+export function parserRevue(texte: string): RevueBrute['fautes'] {
+  return parser<RevueBrute>(schemaRevue, texte, 'revue').fautes
+}

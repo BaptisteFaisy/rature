@@ -57,13 +57,19 @@ d'exercices : c'est un **profil d'erreur personnel** qui s'affine à chaque copi
 |---|---|---|---|
 | 1 Ingest | fichier image | image normalisée (1600 px, contraste étiré) | < 300 ms |
 | 2 Anonymise | image | bandeau du nom pixelisé (RNF-P2) | < 500 ms |
-| 3 Extrait | image | annotations du professeur (+ `copiePropre`) | < 6 s |
-| 4 Classifie | annotations | `[{code, ligne, explication, confiance}]` | < 5 s |
+| 3+4 Extrait et type | image | annotations + `[{code, ligne, explication, confiance}]` en **un seul appel** | < 20 s |
+| 4 bis Seconde passe | fautes de confiance < 0,75 | codes confirmés, reclassés ou rétrogradés en E99 | < 5 s |
 | 5 Agrège | classifications + historique | profil d'erreur (récurrence par type) | < 50 ms |
 | 6 Génère | type dominant | exercice + solution masquée + **garde-fou** | < 6 s |
 
-**Budget total : < 20 s.** L'écran d'analyse affiche chaque étape et sa durée : l'attente devient
-une démonstration.
+**Budget total : < 20 s** (22 s mesurés en moyenne, 6,7 s sur une copie propre). L'écran d'analyse
+affiche chaque étape et sa durée : l'attente devient une démonstration.
+
+Depuis la livraison du MVP : les étapes 3 et 4 sont **fusionnées en un seul appel vision** (la
+latence amont, 16 à 50 s par aller-retour, était le point dur), une **seconde passe** revérifie les
+fautes peu sûres, une **sonde de santé** du proxy propose la démo ou le BYOK si l'amont tombe, la
+copie est **zoomable et cliquable**, chaque type d'erreur a son **explication pédagogique**, le
+profil montre la **trajectoire** de la faille, et le mode prof répond à « **quoi reprendre lundi** ».
 
 ## La taxonomie fermée — le cœur du produit
 

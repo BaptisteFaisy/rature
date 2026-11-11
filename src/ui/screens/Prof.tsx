@@ -7,6 +7,7 @@ import { statsEnCsv } from '../../export/exports'
 import { telechargerCsv } from '../../export/telecharger'
 import { Bouton } from '../components/Bouton'
 import { Carte } from '../components/Carte'
+import { CarteLundi } from '../components/CarteLundi'
 import { useRature } from '../../etat/useRature'
 
 /** Écran 7 — mode prof (RF-20) : N copies → statistique de classe + CSV. */
@@ -65,6 +66,8 @@ export function Prof() {
                 : 'Aucune erreur pondérée relevée.'}
             </p>
           </Carte>
+
+          <CarteLundi stats={stats} />
 
           <Carte titre="Répartition des erreurs de la classe">
             <ul className="space-y-2 text-sm">

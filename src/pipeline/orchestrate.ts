@@ -5,14 +5,14 @@
  */
 import { construireDiagnostic } from '../domain/diagnostic'
 import { libelleEtape } from '../domain/etapes'
+import { analyserImage } from './analyse'
+import { revoirFautesPeuSures } from './revue'
 import type { CodeErreur } from '../domain/taxonomy'
 import type { ExerciceVerifie, Progression, ResultatAnalyse, EtapeId } from '../domain/types'
 import { masquerNom } from './anonymize'
 import type { ClientBrut } from './client'
-import { classerAnnotations } from './classify'
 import type { Transport } from './llm'
 import { genererExerciceVerifie } from './exercise'
-import { extraireAnnotations } from './extract'
 import { normaliserImage } from './ingest'
 
 export type OptionsAnalyse = {
@@ -63,12 +63,18 @@ export async function analyserCopie(
 
   const image = await etape('ingest', publier, () => normaliserImage(fichier))
   const anonyme = await etape('anonymise', publier, () => masquerNom(image.dataUrl))
-  const extraction = await etape('extrait', publier, () =>
-    extraireAnnotations(anonyme.dataUrl, options.transport, options.client),
+  // Un seul appel vision pour les étapes 3 et 4 : l'amont coûte 16 à 50 s par
+  // aller-retour, la fusion tient le budget « photo → diagnostic » (RNF-01).
+  const analyse = await etape('extrait', publier, () =>
+    analyserImage(anonyme.dataUrl, options.transport, options.client),
   )
-  const erreurs = await etape('classifie', publier, () =>
-    classerAnnotations(extraction, options.transport, options.client),
-  )
+  const { extraction } = analyse
+  // Étape 4 : les règles restent locales (seuil 0,6, E99, E11 pondérée à 0),
+  // puis seconde passe sur les fautes peu sûres — cible : zéro faux positif.
+  const erreurs = await etape('classifie', publier, async () => {
+    const revue = await revoirFautesPeuSures(analyse.erreurs, options.transport, options.client)
+    return revue.erreurs
+  })
 
   const diagnostic = await etape('agrege', publier, async () =>
     construireDiagnostic(erreurs, {

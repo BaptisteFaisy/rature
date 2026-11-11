@@ -1,4 +1,5 @@
 import { Bouton } from '../components/Bouton'
+import { BandeauSante } from '../components/BandeauSante'
 import { Carte } from '../components/Carte'
 import { useRature } from '../../etat/useRature'
 
@@ -20,6 +21,8 @@ export function Accueil() {
       <Bouton onClick={() => aller('cadrage')} pleineLargeur>
         Photographier ma copie
       </Bouton>
+
+      <BandeauSante />
 
       <div className="flex flex-col items-center gap-2">
         <Bouton variante="discret" onClick={() => void analyserDemo()} disabled={occupe}>
