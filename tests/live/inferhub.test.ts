@@ -1,19 +1,19 @@
 /**
- * Banc de validation live — appelle le VRAI modèle via InferHub.
+ * Banc de validation live — appelle le VRAI modèle via InferHub sur tout le
+ * corpus (`corpus/images/` + `manifeste.json`, générés par
+ * `scripts/generer-copies.py`).
  *
- * Désactivé sans clé : `INFERHUB_API_KEY` absente → les tests sont ignorés,
- * donc la CI reste verte et ne consomme aucun quota. Lancement manuel :
+ * Ignoré sans clé : la CI reste verte et ne consomme aucun quota.
  *
  *   INFERHUB_API_KEY=… npx vitest run tests/live/inferhub.test.ts
  *
- * Ce banc mesure le go / no-go du jour 1 (RATURE-SPEC §22) : le modèle
- * lit-il les annotations manuscrites, et type-t-il correctement ? Les images
- * sont synthétiques (scripts/generer-copies.py) : elles valident le contrat
- * des prompts, pas la lecture d'un vrai manuscrit — pour ça, voir
- * corpus/README.md.
+ * Trois mesures, celles du go / no-go (§22 jour 1) :
+ *  - RNF-03 : ≥ 80 % de dominants corrects sur les copies nettes ;
+ *  - robustesse : les copies dégradées (rotation, lumière, bruit) tiennent ;
+ *  - RNF-04 : **zéro** faute sur une copie sans annotation.
  *
- * Le client ici parle directement à l'amont (pas de proxy) : c'est un banc de
- * mesure, pas le chemin du produit.
+ * Limite assumée : images synthétiques. Le manuscrit réel reste à valider avec
+ * de vraies photos (protocole dans `corpus/README.md`).
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -24,32 +24,36 @@ import type { ClientBrut } from '../../src/pipeline/client'
 import { extraireAnnotations } from '../../src/pipeline/extract'
 import type { RequeteLLM, Transport } from '../../src/pipeline/llm'
 import { chaineModeles, construireCorps } from '../../src/pipeline/llm'
-import { MODELE_PAR_DEFAUT } from '../../src/domain/config'
+import type { CodeErreur } from '../../src/domain/taxonomy'
 
 const CLE = process.env.INFERHUB_API_KEY ?? ''
 const AMONT = process.env.RATURE_AMONT ?? 'https://api.inferhub.dev/v1'
-const MODELE = process.env.RATURE_MODELE ?? MODELE_PAR_DEFAUT
-const DELAI_MS = 90_000
+const MODELE = process.env.RATURE_MODELE ?? ''
+const DELAI_APPEL_MS = 120_000
+const DELAI_JEU_MS = 20 * 60_000
 
-const transport: Transport = { proxy: `${AMONT}/chat/completions`, modele: MODELE }
+const transport: Transport = { proxy: `${AMONT}/chat/completions`, ...(MODELE ? { modele: MODELE } : {}) }
 
-const TRANSITOIRES = new Set([402, 500, 502, 503, 504])
+type EntreeManifeste = { fichier: string; dominant: CodeErreur | null; degradee: boolean }
+const manifeste: { copies: EntreeManifeste[] } = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../corpus/images/manifeste.json', import.meta.url)), 'utf8'),
+)
 
 async function appeler(requete: RequeteLLM, modele: string): Promise<string> {
   const reponse = await fetch(`${AMONT}/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${CLE}` },
     body: JSON.stringify(construireCorps(requete, modele)),
-    signal: AbortSignal.timeout(DELAI_MS),
+    signal: AbortSignal.timeout(DELAI_APPEL_MS),
   })
   if (!reponse.ok) {
-    throw Object.assign(new Error(`amont HTTP ${reponse.status} : ${(await reponse.text()).slice(0, 160)}`), {
-      statut: reponse.status,
-    })
+    throw Object.assign(new Error(`amont HTTP ${reponse.status}`), { statut: reponse.status })
   }
   const data = (await reponse.json()) as { choices?: { message?: { content?: string } }[] }
   return data.choices?.[0]?.message?.content ?? ''
 }
+
+const TRANSITOIRES = new Set([402, 500, 502, 503, 504, 429])
 
 /** Même chaîne de repli que le produit : un modèle sans capacité n'arrête pas le banc. */
 const clientDirect: ClientBrut = async (requete: RequeteLLM) => {
@@ -58,8 +62,7 @@ const clientDirect: ClientBrut = async (requete: RequeteLLM) => {
     try {
       return await appeler(requete, modele)
     } catch (erreur) {
-      const statut = (erreur as { statut?: number }).statut ?? 0
-      if (!TRANSITOIRES.has(statut)) throw erreur
+      if (!TRANSITOIRES.has((erreur as { statut?: number }).statut ?? 0)) throw erreur
       derniere = (erreur as Error).message
     }
   }
@@ -71,64 +74,75 @@ function image(nom: string): string {
   return `data:image/png;base64,${readFileSync(chemin).toString('base64')}`
 }
 
-/** Mesure une copie de bout en bout : extraction puis classification. */
-async function mesurer(nom: string) {
+type Mesure = { fichier: string; attendu: CodeErreur | null; obtenu: CodeErreur | null; fautes: number; ms: number }
+
+async function mesurer(entree: EntreeManifeste): Promise<Mesure> {
   const debut = Date.now()
-  const extraction = await extraireAnnotations(image(nom), transport, clientDirect)
-  const msExtraction = Date.now() - debut
-  const debutClassement = Date.now()
+  const extraction = await extraireAnnotations(image(entree.fichier), transport, clientDirect)
   const erreurs = await classerAnnotations(extraction, transport, clientDirect)
-  const diagnostic = construireDiagnostic(erreurs, { id: nom, createdAt: new Date().toISOString() })
+  const diagnostic = construireDiagnostic(erreurs, { id: entree.fichier, createdAt: new Date().toISOString() })
   return {
-    extraction,
-    erreurs,
-    diagnostic,
-    msExtraction,
-    msClassement: Date.now() - debutClassement,
+    fichier: entree.fichier,
+    attendu: entree.dominant,
+    obtenu: diagnostic.typeDominant,
+    fautes: diagnostic.nbFautes,
+    ms: Date.now() - debut,
   }
 }
 
+async function mesurerToutes(cibles: EntreeManifeste[]): Promise<Mesure[]> {
+  const mesures: Mesure[] = []
+  for (const entree of cibles) {
+    const mesure = await mesurer(entree)
+    mesures.push(mesure)
+    console.info(
+      `[${mesure.fichier}] attendu=${mesure.attendu ?? 'propre'} obtenu=${mesure.obtenu ?? 'aucun'} ` +
+        `fautes=${mesure.fautes} ${(mesure.ms / 1000).toFixed(1)}s`,
+    )
+  }
+  return mesures
+}
+
+function taux(mesures: Mesure[]): number {
+  if (mesures.length === 0) return 0
+  return mesures.filter((m) => m.obtenu === m.attendu).length / mesures.length
+}
+
 describe.skipIf(!CLE)('validation live du modèle (InferHub)', () => {
+  const nettes = manifeste.copies.filter((c) => !c.degradee && c.dominant !== null)
+  const propres = manifeste.copies.filter((c) => c.dominant === null)
+  const degradees = manifeste.copies.filter((c) => c.degradee && c.dominant !== null)
+
   it(
-    'copie 1 : le signe perdu domine',
+    'RNF-03 : au moins 80 % de dominants corrects sur les copies nettes',
     async () => {
-      const { extraction, diagnostic, msExtraction, msClassement } = await mesurer('copie-1-signes.png')
-      console.info(
-        `[copie-1] annotations=${extraction.annotations.length} dominant=${diagnostic.typeDominant} ` +
-          `codes=${diagnostic.erreurs.map((e) => `${e.code}:${e.confiance}`).join(',')} ` +
-          `extraction=${msExtraction}ms classement=${msClassement}ms`,
-      )
-      expect(extraction.copiePropre).toBe(false)
-      expect(extraction.annotations.length).toBeGreaterThanOrEqual(2)
-      expect(diagnostic.typeDominant).toBe('E01')
+      const mesures = await mesurerToutes(nettes)
+      const precision = taux(mesures)
+      console.info(`[RNF-03] nettes : ${(precision * 100).toFixed(0)} % (${mesures.filter((m) => m.obtenu === m.attendu).length}/${mesures.length})`)
+      expect(precision).toBeGreaterThanOrEqual(0.8)
     },
-    DELAI_MS * 2,
+    DELAI_JEU_MS,
   )
 
   it(
-    'copie 2 : identité remarquable et dénominateur commun',
+    'RNF-04 : zéro faute sur les copies propres, nette et dégradée',
     async () => {
-      const { extraction, diagnostic } = await mesurer('copie-2-fractions.png')
-      console.info(
-        `[copie-2] annotations=${extraction.annotations.length} dominant=${diagnostic.typeDominant} ` +
-          `codes=${diagnostic.erreurs.map((e) => `${e.code}:${e.confiance}`).join(',')}`,
-      )
-      expect(extraction.copiePropre).toBe(false)
-      expect(['E03', 'E04']).toContain(diagnostic.typeDominant)
+      const mesures = await mesurerToutes(propres)
+      for (const mesure of mesures) {
+        expect(mesure.fautes, `${mesure.fichier} : faute inventée`).toBe(0)
+      }
     },
-    DELAI_MS * 2,
+    DELAI_JEU_MS,
   )
 
   it(
-    'copie 3 : aucune erreur inventée (RNF-04)',
+    'robustesse : les copies dégradées (photo téléphone) gardent le bon dominant',
     async () => {
-      const { extraction, diagnostic } = await mesurer('copie-3-propre.png')
-      console.info(
-        `[copie-3] copiePropre=${extraction.copiePropre} annotations=${extraction.annotations.length} fautes=${diagnostic.nbFautes}`,
-      )
-      expect(diagnostic.nbFautes).toBe(0)
-      expect(diagnostic.typeDominant).toBeNull()
+      const mesures = await mesurerToutes(degradees)
+      const precision = taux(mesures)
+      console.info(`[robustesse] dégradées : ${(precision * 100).toFixed(0)} %`)
+      expect(precision).toBeGreaterThanOrEqual(0.5)
     },
-    DELAI_MS * 2,
+    DELAI_JEU_MS,
   )
 })

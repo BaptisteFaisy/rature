@@ -1,0 +1,59 @@
+{
+  "copies": [
+    {
+      "fichier": "copie-1-signes.png",
+      "dominant": "E01",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-2-identites.png",
+      "dominant": "E03",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-3-propre.png",
+      "dominant": null,
+      "degradee": false
+    },
+    {
+      "fichier": "copie-4-developpement.png",
+      "dominant": "E02",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-5-domaine.png",
+      "dominant": "E05",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-6-puissances.png",
+      "dominant": "E06",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-7-equations.png",
+      "dominant": "E08",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-8-grandeurs.png",
+      "dominant": "E09",
+      "degradee": false
+    },
+    {
+      "fichier": "copie-1-signes-photo.png",
+      "dominant": "E01",
+      "degradee": true
+    },
+    {
+      "fichier": "copie-6-puissances-photo.png",
+      "dominant": "E06",
+      "degradee": true
+    },
+    {
+      "fichier": "copie-3-propre-photo.png",
+      "dominant": null,
+      "degradee": true
+    }
+  ]
+}
