@@ -95,7 +95,9 @@ def analyze():
     web.add_middleware(
         CORSMiddleware,
         allow_origins=ORIGINES,
-        allow_methods=["POST", "OPTIONS"],
+        # GET pour la sonde de santé (`/health`) appelée depuis le navigateur :
+        # sans lui, la sonde échoue en CORS et l'app annonce à tort « indisponible ».
+        allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["content-type", "x-rature-cle"],
         max_age=600,
     )

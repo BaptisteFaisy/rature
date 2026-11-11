@@ -16,10 +16,10 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { construireDiagnostic } from '../../src/domain/diagnostic'
 import { MODELE_PAR_DEFAUT } from '../../src/domain/config'
-import { classerAnnotations } from '../../src/pipeline/classify'
+import { analyserImage } from '../../src/pipeline/analyse'
 import type { ClientBrut } from '../../src/pipeline/client'
 import { genererExerciceVerifie } from '../../src/pipeline/exercise'
-import { extraireAnnotations } from '../../src/pipeline/extract'
+import { revoirFautesPeuSures } from '../../src/pipeline/revue'
 import type { RequeteLLM, Transport } from '../../src/pipeline/llm'
 import { chaineModeles, construireCorps } from '../../src/pipeline/llm'
 
@@ -74,18 +74,21 @@ describe.skipIf(!CLE)('enregistrement du corpus de démo', () => {
     'capte extraction, classification, exercice et verdict sur la copie 1',
     async () => {
       const brut: Record<string, string[]> = {}
-      const extraction = await extraireAnnotations(
+      // Chemin réel du produit : UN appel vision (annotations + typage), puis la
+      // seconde passe si des fautes sont peu sûres.
+      const { extraction, erreurs } = await analyserImage(
         image(COPIE),
         transport,
-        clientEnregistreur(brut, 'extraction'),
+        clientEnregistreur(brut, 'analyse'),
       )
-      const erreurs = await classerAnnotations(
-        extraction,
+      const revue = await revoirFautesPeuSures(
+        erreurs,
         transport,
-        clientEnregistreur(brut, 'classification'),
+        clientEnregistreur(brut, 'revue'),
       )
-      const diagnostic = construireDiagnostic(erreurs, { id: COPIE, createdAt: new Date().toISOString() })
+      const diagnostic = construireDiagnostic(revue.erreurs, { id: COPIE, createdAt: new Date().toISOString() })
       expect(diagnostic.typeDominant).toBeTruthy()
+      console.info(`[démo] revues=${revue.revues} modifiées=${revue.modifiees}`)
 
       await genererExerciceVerifie({
         typeDominant: diagnostic.typeDominant!,
@@ -114,8 +117,7 @@ describe.skipIf(!CLE)('enregistrement du corpus de démo', () => {
         )}\n`,
       )
       console.info(`[démo] enregistré dans ${sortie} — dominant ${diagnostic.typeDominant}`)
-      expect(brut.extraction?.[0]).toBeTruthy()
-      expect(brut.classification?.[0]).toBeTruthy()
+      expect(brut.analyse?.[0]).toBeTruthy()
       expect(brut.exercice?.[0]).toBeTruthy()
       expect(brut.verdict?.[0]).toBeTruthy()
     },

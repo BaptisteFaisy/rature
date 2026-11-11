@@ -39,6 +39,10 @@ function empreinte(ip) {
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204 })
+    // Sonde de santé : l'app la consulte au chargement pour annoncer un repli.
+    if (request.method === 'GET' && new URL(request.url).pathname === '/health') {
+      return json({ ok: true, service: 'rature-proxy-worker' })
+    }
     if (request.method !== 'POST') return json({ erreur: 'Méthode non autorisée.' }, 405)
 
     const cle = request.headers.get('x-rature-cle') || env.INFERHUB_API_KEY

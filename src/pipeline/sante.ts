@@ -10,7 +10,14 @@ import { PROXY_PAR_DEFAUT } from '../domain/config'
 
 export type SanteProxy = 'ok' | 'ko' | 'inconnue'
 
-const DELAI_SONDE_MS = 5000
+/**
+ * 12 s et une seconde tentative : le proxy Modal fait du scale-to-zero, et un
+ * démarrage à froid prend ~5 s. Avec un délai de 5 s, la sonde annonçait à tort
+ * « modèle indisponible » sur un conteneur froid (constaté en navigateur).
+ */
+const DELAI_SONDE_MS = 12_000
+const TENTATIVES = 2
+const PAUSE_ENTRE_ESSAIS_MS = 1500
 
 /** L'URL à sonder : on remplace `/analyze` (le POST) par `/health` (la sonde). */
 export function urlSante(proxy: string): string {
@@ -22,9 +29,11 @@ function estLocal(proxy: string): boolean {
   return proxy === PROXY_PAR_DEFAUT || proxy.startsWith('/api')
 }
 
-export async function sonderProxy(proxy = PROXY_PAR_DEFAUT): Promise<SanteProxy> {
-  // Un proxy same-origin n'a pas de `/health` déployé : on ne ment pas.
-  if (estLocal(proxy)) return 'inconnue'
+function attendre(ms: number): Promise<void> {
+  return new Promise((resoudre) => setTimeout(resoudre, ms))
+}
+
+async function sonderUneFois(proxy: string): Promise<SanteProxy> {
   try {
     const reponse = await fetch(urlSante(proxy), {
       method: 'GET',
@@ -34,4 +43,15 @@ export async function sonderProxy(proxy = PROXY_PAR_DEFAUT): Promise<SanteProxy>
   } catch {
     return 'ko'
   }
+}
+
+export async function sonderProxy(proxy = PROXY_PAR_DEFAUT): Promise<SanteProxy> {
+  // Un proxy same-origin n'a pas de `/health` déployé : on ne ment pas.
+  if (estLocal(proxy)) return 'inconnue'
+  for (let essai = 1; essai <= TENTATIVES; essai += 1) {
+    const etat = await sonderUneFois(proxy)
+    if (etat === 'ok' || essai === TENTATIVES) return etat
+    await attendre(PAUSE_ENTRE_ESSAIS_MS)
+  }
+  return 'ko'
 }
