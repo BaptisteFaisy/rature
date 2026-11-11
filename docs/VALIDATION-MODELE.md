@@ -55,8 +55,10 @@ Trois réponses dans le code, pas dans la documentation :
 2. **Le diagnostic s'affiche avant l'exercice** (`onResultatPartiel` dans
    `src/pipeline/orchestrate.ts`) : RNF-01 porte sur photo → diagnostic. L'étape 6
    continue en arrière-plan et l'écran se complète à son arrivée.
-3. **Corpus de démo rejouable** (`corpus/`) : la vidéo et la démo hors ligne ne
-   dépendent pas de la disponibilité de l'amont.
+3. **Mode démonstration** (`src/pipeline/demo.ts`) : les réponses réelles capturées sur la
+   copie n°1 (`corpus/reponses/copie-1-signes.json`) sont rejouées à l'identique — le
+   parcours complet est démontrable hors ligne, sans clé et sans amont disponible. L'UI
+   affiche « réponses enregistrées » quand ce mode tourne.
 
 Réduire encore la latence demanderait un fournisseur dédié (une seule clé, un
 seul modèle, pas d'enchère) : c'est la première chose à faire après le

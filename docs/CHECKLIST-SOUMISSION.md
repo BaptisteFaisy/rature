@@ -15,6 +15,8 @@ Les soumissions en retard ne sont pas acceptées.
 - [x] Le nom de l'élève est masqué à l'affichage (pixelisation du bandeau, étape 2)
 - [x] Aucune image n'est conservée après analyse (data URL en mémoire de session uniquement)
 - [x] Les outils IA sont déclarés ([`DECLARATION-IA.md`](DECLARATION-IA.md))
+- [x] Le parcours complet est démontrable **hors ligne** (mode démo : réponses du modèle
+      enregistrées, bouton sur l'accueil) — vérifié sur la démo publique
 - [ ] Une **vraie** copie corrigée photographiée produit un diagnostic typé correct en < 20 s
       → à mesurer sur 5 copies réelles + 2 copies propres (protocole : [`../corpus/README.md`](../corpus/README.md))
 - [ ] La vidéo ≤ 3 min est en ligne, publique, et se lance en navigation privée

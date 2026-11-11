@@ -129,7 +129,10 @@ Le produit parle une API [OI]-compatible servie par **InferHub**. Trois modes, d
    - Cloudflare Worker : `worker/worker.js` (`wrangler deploy`, `wrangler secret put INFERHUB_API_KEY`).
 2. **BYOK** : l'utilisateur colle sa clé dans Réglages ; elle part dans l'en-tête `x-rature-cle` et
    reste sur l'appareil. Filet de sécurité si le quota du proxy est épuisé pendant le jugement.
-3. **Corpus de démo** : les fixtures de `corpus/` rejouent des réponses enregistrées, sans clé.
+3. **Mode démonstration** : un bouton de l'accueil rejoue le parcours complet sur une copie
+   d'exemple, avec les **réallement enregistrées** réponses du modèle (`corpus/reponses/`) :
+   aucun appel réseau, aucune clé, et l'UI le dit. C'est le filet de sécurité du jour du
+   jugement.
 
 Variables : voir [`.env.example`](.env.example).
 

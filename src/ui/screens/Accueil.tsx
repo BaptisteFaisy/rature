@@ -4,7 +4,7 @@ import { useRature } from '../../etat/useRature'
 
 /** Écran 1 : un seul bouton. Pas d'explication avant l'action (§21). */
 export function Accueil() {
-  const { aller, profil } = useRature()
+  const { aller, profil, analyserDemo, occupe } = useRature()
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -20,6 +20,15 @@ export function Accueil() {
       <Bouton onClick={() => aller('cadrage')} pleineLargeur>
         Photographier ma copie
       </Bouton>
+
+      <div className="flex flex-col items-center gap-2">
+        <Bouton variante="discret" onClick={() => void analyserDemo()} disabled={occupe}>
+          Pas de copie sous la main ? Lancer la démonstration
+        </Bouton>
+        <p className="text-center text-xs text-muet">
+          Réponses du modèle enregistrées sur une copie d’exemple — aucun appel réseau.
+        </p>
+      </div>
 
       <p className="text-center text-sm text-muet">
         Aucune copie n’est conservée. Ton historique reste sur ton appareil.

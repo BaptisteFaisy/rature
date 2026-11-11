@@ -1,0 +1,12 @@
+{
+  "source": "corpus/images/copie-1-signes.png",
+  "modele": "ag/gemini-4-carbon",
+  "enregistreLe": "2026-11-11T18:27:53.294Z",
+  "dominant": "E01",
+  "reponses": {
+    "extraction": "```json\n{\n  \"annotations\": [\n    {\n      \"ligne\": \"A = -6x - 10\",\n      \"annotation\": \"croix rouge, signe !\",\n      \"zone\": { \"x\": 0.14, \"y\": 0.18, \"largeur\": 0.63, \"hauteur\": 0.03 }\n    },\n    {\n      \"ligne\": \"B = 4x - 4 - 3x + 6\",\n      \"annotation\": \"croix rouge, -3 x + 2 ?\",\n      \"zone\": { \"x\": 0.14, \"y\": 0.29, \"largeur\": 0.65, \"hauteur\": 0.03 }\n    },\n    {\n      \"ligne\": \"C = 2x + 3 + 4\",\n      \"annotation\": \"recopié 2x+3\",\n      \"zone\": { \"x\": 0.14, \"y\": 0.40, \"largeur\": 0.66, \"hauteur\": 0.03 }\n    }\n  ],\n  \"copiePropre\": false,\n  \"nomDetecte\": \"Léa M.\"\n}\n```",
+    "classification": "```json\n{\n  \"erreurs\": [\n    {\n      \"code\": \"E01\",\n      \"ligne\": \"A = -6x - 10\",\n      \"explication\": \"Un signe semble avoir été inversé lors du calcul par rapport à l'étape précédente.\",\n      \"confiance\": 0.85\n    },\n    {\n      \"code\": \"E01\",\n      \"ligne\": \"B = 4x - 4 - 3x + 6\",\n      \"explication\": \"La règle des signes n'a pas été appliquée sur le second terme lors du développement.\",\n      \"confiance\": 0.80\n    },\n    {\n      \"code\": \"E11\",\n      \"ligne\": \"C = 2x + 3 + 4\",\n      \"explication\": \"Une partie de l'expression de départ ou de la ligne précédente a été mal recopiée.\",\n      \"confiance\": 0.90\n    }\n  ]\n}\n```",
+    "exercice": "```json\n{\n  \"enonce\": \"Développe et réduis l'expression suivante : A = -4(3x - 2) + 5(x - 1)\",\n  \"indices\": [\n    \"Repère bien le signe du facteur devant la parenthèse : c'est le nombre négatif -4 que tu distribues sur (3x - 2).\",\n    \"Applique la règle des signes lors de la multiplication : le produit de deux nombres négatifs devient positif.\"\n  ],\n  \"solution\": \"On distribue -4 au premier bloc : -4 × 3x = -12x et -4 × (-2) = +8. C'est ici que se joue le signe : multiplier deux termes négatifs donne un terme positif (+8 et non -8). On distribue ensuite 5 : 5 × x = 5x et 5 × (-1) = -5. En assemblant : A = -12x + 8 + 5x - 5, ce qui donne A = -7x + 3.\",\n  \"typeTravaille\": \"E01\",\n  \"niveau\": \"seconde\"\n}\n```",
+    "verdict": "```json\n{\n  \"travailleLeBonType\": true,\n  \"neDonneLaSolutionOrigine\": true,\n  \"memeNiveau\": true,\n  \"motifs\": []\n}\n```"
+  }
+}
