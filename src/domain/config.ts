@@ -26,10 +26,22 @@ export const CLES = {
 export const PROXY_PAR_DEFAUT = '/api/analyze'
 
 /**
- * Modèle par défaut (InferHub, API [OI]-compatible). Flash multimodal : la
- * lecture du manuscrit et le raisonnement en un seul appel (§18.4).
+ * Modèle par défaut (InferHub, API [OI]-compatible). Choisi sur mesure
+ * latence : `ag/gemini-4-carbon` répond en ~16 s là où `ag/gemini-3.8-flash-high`
+ * en prend ~50 s (mesuré le 11 novembre sur les copies du corpus).
  */
-export const MODELE_PAR_DEFAUT = 'ag/gemini-3.8-flash-high'
+export const MODELE_PAR_DEFAUT = 'ag/gemini-4-carbon'
+
+/**
+ * Chaîne de repli : InferHub est une place de marché, un modèle peut être sans
+ * capacité (503) ou hors enchère (402) d'une minute à l'autre. On essaie le
+ * suivant plutôt que de rendre une erreur à l'élève.
+ */
+export const CHAINE_MODELES = [
+  'ag/gemini-4-carbon',
+  'ag/claude-sonnet-4-6',
+  'ag/gemini-3.8-flash-high',
+]
 
 /** Amont [OI]-compatible utilisé par le proxy edge. */
 export const AMONT_PAR_DEFAUT = 'https://api.inferhub.dev/v1'

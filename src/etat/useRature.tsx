@@ -110,16 +110,24 @@ export function RatureProvider({ children }: { children: ReactNode }) {
           transport: transportDe(etat.reglages),
           onProgression: (p) =>
             setEtat((precedent) => ({ ...precedent, progression: fusionner(precedent.progression, p) })),
+          // Dès la fin de l'étape 5 : le diagnostic s'affiche, l'exercice
+          // continue de se préparer (RNF-01 porte sur photo → diagnostic).
+          onResultatPartiel: (partiel) => {
+            void enregistrerDiagnostic(partiel.diagnostic).then((profil) => {
+              setEtat((precedent) => ({
+                ...precedent,
+                occupe: false,
+                resultat: partiel,
+                profil,
+                diagnostics: [...precedent.diagnostics, partiel.diagnostic],
+                ecran: 'diagnostic',
+              }))
+            })
+          },
         })
-        const profil = await enregistrerDiagnostic(resultat.diagnostic)
-        setEtat((precedent) => ({
-          ...precedent,
-          occupe: false,
-          resultat,
-          profil,
-          diagnostics: [...precedent.diagnostics, resultat.diagnostic],
-          ecran: 'diagnostic',
-        }))
+        // L'exercice est prêt : on complète le résultat déjà affiché, sans
+        // repersister le diagnostic (déjà fait dans onResultatPartiel).
+        setEtat((precedent) => ({ ...precedent, occupe: false, resultat }))
       } catch (erreur) {
         setEtat((precedent) => ({ ...precedent, occupe: false, erreur: messageErreur(erreur), ecran: 'cadrage' }))
       }

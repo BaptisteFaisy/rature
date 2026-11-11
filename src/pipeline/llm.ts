@@ -8,7 +8,7 @@
  *
  * Aucun secret ici : ce module tourne dans le navigateur, sans clé embarquée.
  */
-import { MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../domain/config'
+import { CHAINE_MODELES, MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../domain/config'
 
 export type RequeteLLM = {
   system: string
@@ -72,9 +72,17 @@ export function construireCorps(requete: RequeteLLM, modele: string): Record<str
   return corps
 }
 
-/** Un appel, un texte. Toute erreur devient ErreurLLM avec son statut HTTP. */
-export async function completer(transport: Transport, requete: RequeteLLM): Promise<string> {
-  const modele = transport.modele ?? MODELE_PAR_DEFAUT
+/** Chaîne essayée : le modèle demandé d'abord, puis les replis connus. */
+export function chaineModeles(transport: Transport): string[] {
+  const premier = transport.modele?.trim() || MODELE_PAR_DEFAUT
+  return [premier, ...CHAINE_MODELES.filter((modele) => modele !== premier)]
+}
+
+/** 402 (hors enchère) et 503 (pas de capacité) sont transitoires : on tente le suivant. */
+const REESSAYABLES = new Set([402, 500, 502, 503, 504])
+
+/** Un appel, un modèle, un texte. Toute erreur devient ErreurLLM + statut. */
+async function appeler(transport: Transport, requete: RequeteLLM, modele: string): Promise<string> {
   const entetes: Record<string, string> = { 'content-type': 'application/json' }
   if (transport.cle) entetes['x-rature-cle'] = transport.cle
 
@@ -103,6 +111,24 @@ export async function completer(transport: Transport, requete: RequeteLLM): Prom
   const texte = typeof data.texte === 'string' ? data.texte : ''
   if (texte.trim().length === 0) throw new ErreurLLM('Réponse vide du modèle.', 502)
   return texte
+}
+
+/**
+ * InferHub est une place de marché : un modèle peut être sans capacité ou hors
+ * enchère à l'instant de l'appel. On descend la chaîne avant de rendre la main,
+ * sauf sur un 429 (quota) qui ne se soigne pas en changeant de modèle.
+ */
+export async function completer(transport: Transport, requete: RequeteLLM): Promise<string> {
+  let derniere: ErreurLLM | null = null
+  for (const modele of chaineModeles(transport)) {
+    try {
+      return await appeler(transport, requete, modele)
+    } catch (erreur) {
+      if (!(erreur instanceof ErreurLLM) || !REESSAYABLES.has(erreur.statut)) throw erreur
+      derniere = erreur
+    }
+  }
+  throw derniere ?? new ErreurLLM('Aucun modèle disponible pour le moment.', 503)
 }
 
 /** Extrait le premier objet JSON d'un texte (le modèle encadre parfois). */

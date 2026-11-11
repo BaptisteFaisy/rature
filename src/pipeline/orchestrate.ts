@@ -23,6 +23,12 @@ export type OptionsAnalyse = {
   /** Injectables pour les tests : identifiant et horodatage déterministes. */
   id?: string
   maintenant?: () => Date
+  /**
+   * Publié dès la fin de l'étape 5 : le diagnostic s'affiche pendant que
+   * l'exercice se prépare (RNF-01 porte sur photo → diagnostic, pas sur
+   * photo → exercice).
+   */
+  onResultatPartiel?: (partiel: ResultatAnalyse) => void
 }
 
 /** Exécute une étape en publiant son état et sa durée. */
@@ -70,6 +76,16 @@ export async function analyserCopie(
       createdAt: maintenant().toISOString(),
     }),
   )
+
+  // Le diagnostic est affiché dès maintenant : l'exercice se prépare derrière
+  // (RNF-01 porte sur photo → diagnostic).
+  options.onResultatPartiel?.({
+    diagnostic,
+    extraction,
+    imageAnonymisee: anonyme.dataUrl,
+    exercice: null,
+    messageExercice: 'Exercice en préparation…',
+  })
 
   const exercice = await produireExercice(diagnostic.typeDominant, extraction, options, publier)
   return {
