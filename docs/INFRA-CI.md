@@ -79,7 +79,7 @@ proxy edge, avec une clé qui ne descend **jamais** dans le bundle.
 
 ## 5. Déploiement
 
-`pages.yml` construit la webapp et la publie sur GitHub Pages (déploiement vérifié le 11 novembre, 6db57e8)
+`pages.yml` construit la webapp statique et la publie automatiquement sur GitHub Pages (déploiement vérifié le 11 novembre, 6db57e8)
 (`https://baptistefaisy.github.io/rature/`) à chaque push sur `main` — public,
 HTTPS, gratuit, sans jeton. La clé InferHub n'y est pas : le site parle au
 proxy edge (`/api/analyze`, voir `api/analyze.ts` et la variante
