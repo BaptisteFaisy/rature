@@ -47,7 +47,7 @@ export default {
     const debut = Date.now()
     const ip = request.headers.get('cf-connecting-ip') || 'inconnu'
     if (!autoriser(empreinte(ip), Date.now())) {
-      return json({ erreur: "Quota d'analyse atteint. Réessaie plus tard." }, 429)
+      return json({ erreur: 'Quota du proxy atteint pour cette heure. Réessaie plus tard.', quota: 'proxy' }, 429)
     }
 
     const corps = await request.text()
@@ -62,6 +62,9 @@ export default {
         signal: AbortSignal.timeout(60000),
       })
       const data = await reponse.json()
+      if (reponse.status === 429) {
+        return json({ erreur: 'Limite de débit du fournisseur de modèles : réessaie dans une minute.' }, 429)
+      }
       if (!reponse.ok) return json({ erreur: data?.error?.message || 'Amont indisponible.' }, reponse.status)
       const texte = data?.choices?.[0]?.message?.content || ''
       if (!texte) return json({ erreur: 'Réponse vide du modèle.' }, 502)

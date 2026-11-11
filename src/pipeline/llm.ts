@@ -27,7 +27,12 @@ export type Transport = {
   modele?: string
 }
 
-export type ReponseProxy = { texte: string }
+export type ReponseProxy = {
+  texte?: string
+  erreur?: string
+  /** `proxy` = quota du proxy partagé (le BYOK est le seul recours). */
+  quota?: string
+}
 
 export class ErreurLLM extends Error {
   readonly statut: number
@@ -80,6 +85,11 @@ export function chaineModeles(transport: Transport): string[] {
 
 /** 402 (hors enchère) et 503 (pas de capacité) sont transitoires : on tente le suivant. */
 const REESSAYABLES = new Set([402, 500, 502, 503, 504])
+const ATTENTE_429_MS = 2500
+
+function attendre(ms: number): Promise<void> {
+  return new Promise((resoudre) => setTimeout(resoudre, ms))
+}
 
 /** Un appel, un modèle, un texte. Toute erreur devient ErreurLLM + statut. */
 async function appeler(transport: Transport, requete: RequeteLLM, modele: string): Promise<string> {
@@ -97,15 +107,7 @@ async function appeler(transport: Transport, requete: RequeteLLM, modele: string
     throw new ErreurLLM('Réseau indisponible. Vérifie ta connexion puis réessaie.', 0)
   }
 
-  if (reponse.status === 429) {
-    throw new ErreurLLM(
-      "Quota d'analyse atteint. Colle ta propre clé dans Réglages, ou réessaie plus tard.",
-      429,
-    )
-  }
-  if (!reponse.ok) {
-    throw new ErreurLLM(`Analyse refusée (HTTP ${reponse.status}). Réessaie dans un instant.`, reponse.status)
-  }
+  if (!reponse.ok) throw erreurDepuisReponse(reponse)
 
   const data = (await reponse.json()) as ReponseProxy
   const texte = typeof data.texte === 'string' ? data.texte : ''
@@ -113,19 +115,52 @@ async function appeler(transport: Transport, requete: RequeteLLM, modele: string
   return texte
 }
 
+/** Le proxy renvoie `{erreur, quota?}` : on affiche son message, pas un générique. */
+async function erreurDepuisReponse(reponse: Response): Promise<ErreurLLM> {
+  let data: ReponseProxy = {}
+  try {
+    data = (await reponse.json()) as ReponseProxy
+  } catch {
+    data = {}
+  }
+  if (reponse.status === 429) {
+    // Quota du proxy partagé : la clé de l'utilisateur est le seul recours.
+    if (data.quota === 'proxy') {
+      return new ErreurLLM(
+        data.erreur || "Quota du proxy atteint. Colle ta propre clé dans Réglages, ou réessaie plus tard.",
+        429,
+      )
+    }
+    // Limite de débit du fournisseur : transitoire, on réessaie après une pause.
+    return new ErreurLLM(data.erreur || 'Limite de débit du fournisseur de modèles.', 429)
+  }
+  const message = data.erreur || `Analyse refusée (HTTP ${reponse.status}).`
+  return new ErreurLLM(message, reponse.status)
+}
+
 /**
  * InferHub est une place de marché : un modèle peut être sans capacité ou hors
- * enchère à l'instant de l'appel. On descend la chaîne avant de rendre la main,
- * sauf sur un 429 (quota) qui ne se soigne pas en changeant de modèle.
+ * enchère à l'instant de l'appel. On descend la chaîne avant de rendre la main.
+ * Un 429 « fournisseur » se tente une seconde fois après une courte pause, puis
+ * passe au modèle suivant ; un 429 « quota du proxy » remonte directement.
  */
 export async function completer(transport: Transport, requete: RequeteLLM): Promise<string> {
   let derniere: ErreurLLM | null = null
   for (const modele of chaineModeles(transport)) {
-    try {
-      return await appeler(transport, requete, modele)
-    } catch (erreur) {
-      if (!(erreur instanceof ErreurLLM) || !REESSAYABLES.has(erreur.statut)) throw erreur
-      derniere = erreur
+    for (const essai of [1, 2]) {
+      try {
+        return await appeler(transport, requete, modele)
+      } catch (erreur) {
+        if (!(erreur instanceof ErreurLLM)) throw erreur
+        if (erreur.statut !== 429 && !REESSAYABLES.has(erreur.statut)) throw erreur
+        if (erreur.message.includes('Colle ta propre clé')) throw erreur
+        if (erreur.statut === 429 && essai === 2) {
+          derniere = erreur
+          break
+        }
+        if (erreur.statut === 429) await attendre(ATTENTE_429_MS)
+        derniere = erreur
+      }
     }
   }
   throw derniere ?? new ErreurLLM('Aucun modèle disponible pour le moment.', 503)
