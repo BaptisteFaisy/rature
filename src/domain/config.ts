@@ -22,8 +22,14 @@ export const CLES = {
   reglages: 'rature/reglages',
 } as const
 
-/** Proxy edge par défaut : même origine, aucun secret dans le bundle. */
-export const PROXY_PAR_DEFAUT = '/api/analyze'
+/**
+ * Proxy edge. L'URL publique est injectée au build (`VITE_PROXY_URL`, posée
+ * par le workflow pages.yml depuis la variable de dépôt `RATURE_PROXY_URL`) ;
+ * en local, le repli same-origin `/api/analyze` reste valable. Aucune clé
+ * n'entre dans le bundle : seule l'adresse du proxy.
+ */
+const proxyInjecte = (import.meta.env?.VITE_PROXY_URL as string | undefined)?.trim()
+export const PROXY_PAR_DEFAUT = proxyInjecte || '/api/analyze'
 
 /**
  * Modèle par défaut (InferHub, API [OI]-compatible). Choisi sur mesure

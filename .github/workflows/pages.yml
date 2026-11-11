@@ -49,6 +49,8 @@ jobs:
         shell: bash
         env:
           VITE_BASE: /rature/
+          # Variable de dépôt (publique) : adresse du proxy edge déployé.
+          VITE_PROXY_URL: ${{ vars.RATURE_PROXY_URL }}
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
