@@ -98,6 +98,8 @@ export type Extraction = {
 export type ResultatAnalyse = {
   diagnostic: Diagnostic
   extraction: Extraction
+  /** Image anonymisée, en mémoire de session uniquement : jamais persistée. */
+  imageAnonymisee: string
   exercice: ExerciceVerifie | null
   /** Message honnête quand aucun exercice pertinent n'a pu être produit. */
   messageExercice?: string

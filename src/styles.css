@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de Raturé. Deux couleurs seulement portent du sens :
+ *  - jaune  : le diagnostic (ce qu'on a trouvé) ;
+ *  - vert   : la progression (le profil qui avance).
+ * Aucun rouge : la copie est déjà annotée en rouge par le professeur, on
+ * n'ajoute pas de la honte à un document déjà marqué.
+ */
+@theme {
+  --color-fond: #0d0f14;
+  --color-surface: #151922;
+  --color-surface-2: #1d222d;
+  --color-bord: #2a3140;
+  --color-texte: #e8eaf0;
+  --color-muet: #9aa3b2;
+  --color-jaune: #f5c518;
+  --color-vert: #3ecf8e;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-fond);
+  color: var(--color-texte);
+  font-family: var(--font-sans);
+  /* RNF-06 : texte jamais en dessous de 16 px. */
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus visible partout : navigation clavier obligatoire (RNF-06). */
+:focus-visible {
+  outline: 3px solid var(--color-jaune);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes pulse-doux {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.etape-en-cours {
+  animation: pulse-doux 1.4s ease-in-out infinite;
+}

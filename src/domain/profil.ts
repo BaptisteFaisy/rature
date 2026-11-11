@@ -24,9 +24,12 @@ export function agreger(profil: Profil, diagnostic: Diagnostic): Profil {
   const signalees = { ...profil.signalees }
 
   for (const erreur of diagnostic.erreurs) {
-    if (!entreDansLeProfil(erreur.code)) continue
+    // Toute faute est signalée (honnêteté), mais seules les pondérées comptent
+    // dans le profil : E99 « non typée » et E11 « recopie » restent à 0.
     signalees[erreur.code] = (signalees[erreur.code] ?? 0) + 1
-    if (estPonderee(erreur.code)) parType[erreur.code] = (parType[erreur.code] ?? 0) + 1
+    if (entreDansLeProfil(erreur.code) && estPonderee(erreur.code)) {
+      parType[erreur.code] = (parType[erreur.code] ?? 0) + 1
+    }
   }
 
   return {
