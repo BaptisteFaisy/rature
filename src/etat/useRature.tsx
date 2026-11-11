@@ -120,15 +120,20 @@ export function RatureProvider({ children }: { children: ReactNode }) {
           // Dès la fin de l'étape 5 : le diagnostic s'affiche, l'exercice
           // continue de se préparer (RNF-01 porte sur photo → diagnostic).
           onResultatPartiel: (partiel) => {
+            // Affichage SYNCHRONE : le résultat complet (avec exercice) est
+            // posé après, il ne doit pas être écrasé par la persistance.
+            setEtat((precedent) => ({
+              ...precedent,
+              occupe: false,
+              resultat: partiel,
+              demo: Boolean(options.demo),
+              ecran: 'diagnostic',
+            }))
             void enregistrerDiagnostic(partiel.diagnostic).then((profil) => {
               setEtat((precedent) => ({
                 ...precedent,
-                occupe: false,
-                resultat: partiel,
-                demo: Boolean(options.demo),
                 profil,
                 diagnostics: [...precedent.diagnostics, partiel.diagnostic],
-                ecran: 'diagnostic',
               }))
             })
           },
