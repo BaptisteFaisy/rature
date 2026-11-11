@@ -461,6 +461,9 @@ jobs:
           GH_ECRITURE: ${{ secrets.AUTOMERGE_PAT }}
           FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
           FIREWORKS_MODEL: ${{ vars.FIREWORKS_MODEL }}
+          # Amont [OI]-compatible (InferHub ici) : sans cette variable, l'agent
+          # de conflit retombe sur l'URL par défaut et rend 404 avec notre clé.
+          FIREWORKS_BASE_URL: ${{ vars.FIREWORKS_BASE_URL }}
           FIREWORKS_AGENT_RESOLVE: ${{ vars.FIREWORKS_AGENT_RESOLVE }}
           FIREWORKS_AGENT_SCOPE: ${{ vars.FIREWORKS_AGENT_SCOPE }}
           # v22 — agent de réparation des tests (zeroclaw `fw`) : `0` coupe.
