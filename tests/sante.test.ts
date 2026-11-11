@@ -35,4 +35,12 @@ describe('sonde du proxy (lot 2)', () => {
     await expect(sonderProxy('/health')).resolves.toBe('inconnue')
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('une adresse absolue est sondable, y compris l’adresse par défaut injectée au build', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"ok":true}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(sonderProxy('https://proxy.exemple.run/analyze')).resolves.toBe('ok')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0]![0])).toBe('https://proxy.exemple.run/health')
+  })
 })
