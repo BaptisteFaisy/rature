@@ -6,7 +6,7 @@ import { useRature } from '../../etat/useRature'
 
 /** Écran 2 : cadrage — aperçu avant analyse, refus poli si trop lourd. */
 export function Cadrage() {
-  const { analyser, erreur, reinitialiserErreur, occupe } = useRature()
+  const { analyser, analyserDemo, erreur, reinitialiserErreur, occupe } = useRature()
   const [fichier, setFichier] = useState<File | null>(null)
   const [apercu, setApercu] = useState<string | null>(null)
   const [refus, setRefus] = useState<string | null>(null)
@@ -65,6 +65,12 @@ export function Cadrage() {
       <Bouton onClick={() => fichier && void analyser(fichier)} disabled={!fichier || occupe} pleineLargeur>
         {occupe ? 'Analyse en cours…' : 'Analyser cette copie'}
       </Bouton>
+
+      <div className="text-center">
+        <Bouton variante="discret" onClick={() => void analyserDemo()} disabled={occupe}>
+          Lancer la démonstration (copie d’exemple, réponses enregistrées)
+        </Bouton>
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../domain/config'
 import { profilVide } from '../domain/profil'
 import type { Diagnostic, Profil, Progression, Reglages, ResultatAnalyse } from '../domain/types'
+import { clientDemo, fichierDemo } from '../pipeline/demo'
 import { genererExerciceVerifie } from '../pipeline/exercise'
 import { analyserCopie } from '../pipeline/orchestrate'
 import type { Transport } from '../pipeline/llm'
@@ -37,11 +38,15 @@ type Etat = {
   progression: Progression[]
   erreur: string | null
   occupe: boolean
+  /** true quand le résultat affiché vient du mode démonstration. */
+  demo: boolean
 }
 
 type Actions = {
   aller: (ecran: Ecran) => void
-  analyser: (fichier: File) => Promise<void>
+  analyser: (fichier: File, options?: { demo?: boolean }) => Promise<void>
+  /** Parcours complet sur la copie de démo, réponses du modèle enregistrées. */
+  analyserDemo: () => Promise<void>
   enregistrerReglages: (reglages: Reglages) => Promise<void>
   viderHistorique: () => Promise<void>
   reinitialiserErreur: () => void
@@ -81,6 +86,7 @@ export function RatureProvider({ children }: { children: ReactNode }) {
     progression: [],
     erreur: null,
     occupe: false,
+    demo: false,
   })
 
   useEffect(() => {
@@ -102,12 +108,13 @@ export function RatureProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const analyser = useCallback(
-    async (fichier: File) => {
+    async (fichier: File, options: { demo?: boolean } = {}) => {
       aller('analyse')
-      setEtat((precedent) => ({ ...precedent, occupe: true, erreur: null, progression: [] }))
+      setEtat((precedent) => ({ ...precedent, occupe: true, erreur: null, progression: [], demo: false }))
       try {
         const resultat = await analyserCopie(fichier, {
           transport: transportDe(etat.reglages),
+          ...(options.demo ? { client: clientDemo() } : {}),
           onProgression: (p) =>
             setEtat((precedent) => ({ ...precedent, progression: fusionner(precedent.progression, p) })),
           // Dès la fin de l'étape 5 : le diagnostic s'affiche, l'exercice
@@ -118,6 +125,7 @@ export function RatureProvider({ children }: { children: ReactNode }) {
                 ...precedent,
                 occupe: false,
                 resultat: partiel,
+                demo: Boolean(options.demo),
                 profil,
                 diagnostics: [...precedent.diagnostics, partiel.diagnostic],
                 ecran: 'diagnostic',
@@ -127,13 +135,17 @@ export function RatureProvider({ children }: { children: ReactNode }) {
         })
         // L'exercice est prêt : on complète le résultat déjà affiché, sans
         // repersister le diagnostic (déjà fait dans onResultatPartiel).
-        setEtat((precedent) => ({ ...precedent, occupe: false, resultat }))
+        setEtat((precedent) => ({ ...precedent, occupe: false, resultat, demo: Boolean(options.demo) }))
       } catch (erreur) {
         setEtat((precedent) => ({ ...precedent, occupe: false, erreur: messageErreur(erreur), ecran: 'cadrage' }))
       }
     },
     [aller, etat.reglages],
   )
+
+  const analyserDemo = useCallback(async () => {
+    await analyser(await fichierDemo(), { demo: true })
+  }, [analyser])
 
   /**
    * Mode prof : les copies analysées ici ne rejoignent PAS l'historique
@@ -202,13 +214,14 @@ export function RatureProvider({ children }: { children: ReactNode }) {
       ...etat,
       aller,
       analyser,
+      analyserDemo,
       analyserLot,
       enregistrerReglages,
       viderHistorique,
       reinitialiserErreur,
       nouvelExercice,
     }),
-    [etat, aller, analyser, analyserLot, enregistrerReglages, viderHistorique, reinitialiserErreur, nouvelExercice],
+    [etat, aller, analyser, analyserDemo, analyserLot, enregistrerReglages, viderHistorique, reinitialiserErreur, nouvelExercice],
   )
 
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>

@@ -2,6 +2,7 @@ import type { Erreur } from '../../domain/types'
 import { BadgeCode } from '../components/BadgeCode'
 import { Bouton } from '../components/Bouton'
 import { Carte } from '../components/Carte'
+import { origineDemo } from '../../pipeline/demo'
 import { useRature } from '../../etat/useRature'
 
 /** Un rectangle jaune par faute, positionné en coordonnées relatives. */
@@ -44,7 +45,7 @@ function LigneErreur({ erreur, index }: { erreur: Erreur; index: number }) {
 
 /** Écran 4 : le diagnostic — où travailler, sans jugement. */
 export function Diagnostic() {
-  const { resultat, aller } = useRature()
+  const { resultat, aller, demo } = useRature()
   if (!resultat) {
     return (
       <div className="space-y-4">
@@ -63,6 +64,13 @@ export function Diagnostic() {
       <h1 className="text-2xl font-semibold">
         {copiePropre ? 'Aucune erreur détectée' : `${diagnostic.nbFautes} point(s) à travailler`}
       </h1>
+
+      {demo ? (
+        <p className="rounded-lg border border-bord bg-surface-2 px-3 py-2 text-xs text-muet">
+          Démonstration : réponses du modèle ({origineDemo().modele}) enregistrées le{' '}
+          {origineDemo().enregistreLe.slice(0, 10)} sur une copie d’exemple. Aucun appel réseau.
+        </p>
+      ) : null}
 
       <Carte>
         <div className="relative">
