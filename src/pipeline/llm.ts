@@ -36,10 +36,13 @@ export type ReponseProxy = {
 
 export class ErreurLLM extends Error {
   readonly statut: number
-  constructor(message: string, statut = 0) {
+  /** true quand c'est le quota du proxy partagé : le seul recours est le BYOK. */
+  readonly quotaProxy: boolean
+  constructor(message: string, statut = 0, quotaProxy = false) {
     super(message)
     this.name = 'ErreurLLM'
     this.statut = statut
+    this.quotaProxy = quotaProxy
   }
 }
 
@@ -83,8 +86,11 @@ export function chaineModeles(transport: Transport): string[] {
   return [premier, ...CHAINE_MODELES.filter((modele) => modele !== premier)]
 }
 
-/** 402 (hors enchère) et 503 (pas de capacité) sont transitoires : on tente le suivant. */
-const REESSAYABLES = new Set([402, 500, 502, 503, 504])
+/**
+ * Statuts transitoires : 402 (hors enchère), 429 (débit), 5xx (pas de capacité,
+ * amont lent ou injoignable). Sur l'un d'eux on descend la chaîne de modèles.
+ */
+const REESSAYABLES = new Set([402, 429, 500, 502, 503, 504])
 const ATTENTE_429_MS = 2500
 
 function attendre(ms: number): Promise<void> {
@@ -107,7 +113,9 @@ async function appeler(transport: Transport, requete: RequeteLLM, modele: string
     throw new ErreurLLM('Réseau indisponible. Vérifie ta connexion puis réessaie.', 0)
   }
 
-  if (!reponse.ok) throw erreurDepuisReponse(reponse)
+  // `await` indispensable : sans lui on lèverait une Promesse, pas une erreur —
+  // donc ni repli sur le modèle suivant, ni message lisible (bug du 11/11).
+  if (!reponse.ok) throw await erreurDepuisReponse(reponse)
 
   const data = (await reponse.json()) as ReponseProxy
   const texte = typeof data.texte === 'string' ? data.texte : ''
@@ -127,8 +135,9 @@ async function erreurDepuisReponse(reponse: Response): Promise<ErreurLLM> {
     // Quota du proxy partagé : la clé de l'utilisateur est le seul recours.
     if (data.quota === 'proxy') {
       return new ErreurLLM(
-        data.erreur || "Quota du proxy atteint. Colle ta propre clé dans Réglages, ou réessaie plus tard.",
+        `${data.erreur || 'Quota du proxy atteint.'} Colle ta propre clé dans Réglages, ou réessaie plus tard.`,
         429,
+        true,
       )
     }
     // Limite de débit du fournisseur : transitoire, on réessaie après une pause.
@@ -138,29 +147,37 @@ async function erreurDepuisReponse(reponse: Response): Promise<ErreurLLM> {
   return new ErreurLLM(message, reponse.status)
 }
 
+/** Un 429 « fournisseur » mérite une seconde chance après une courte pause. */
+async function appelerAvecPause(
+  transport: Transport,
+  requete: RequeteLLM,
+  modele: string,
+): Promise<string> {
+  try {
+    return await appeler(transport, requete, modele)
+  } catch (erreur) {
+    if (!(erreur instanceof ErreurLLM) || erreur.statut !== 429 || erreur.quotaProxy) throw erreur
+    await attendre(ATTENTE_429_MS)
+    return appeler(transport, requete, modele)
+  }
+}
+
 /**
- * InferHub est une place de marché : un modèle peut être sans capacité ou hors
- * enchère à l'instant de l'appel. On descend la chaîne avant de rendre la main.
- * Un 429 « fournisseur » se tente une seconde fois après une courte pause, puis
- * passe au modèle suivant ; un 429 « quota du proxy » remonte directement.
+ * InferHub est une place de marché : un modèle peut être sans capacité (503) ou
+ * hors enchère (402) à l'instant de l'appel — mesuré le 11 novembre : 5 des 6
+ * modèles vision en 503 simultanément. On descend donc toute la chaîne avant de
+ * rendre la main. Seule exception : le quota du proxy partagé, où changer de
+ * modèle ne change rien (le recours est la clé personnelle).
  */
 export async function completer(transport: Transport, requete: RequeteLLM): Promise<string> {
   let derniere: ErreurLLM | null = null
   for (const modele of chaineModeles(transport)) {
-    for (const essai of [1, 2]) {
-      try {
-        return await appeler(transport, requete, modele)
-      } catch (erreur) {
-        if (!(erreur instanceof ErreurLLM)) throw erreur
-        if (erreur.statut !== 429 && !REESSAYABLES.has(erreur.statut)) throw erreur
-        if (erreur.message.includes('Colle ta propre clé')) throw erreur
-        if (erreur.statut === 429 && essai === 2) {
-          derniere = erreur
-          break
-        }
-        if (erreur.statut === 429) await attendre(ATTENTE_429_MS)
-        derniere = erreur
-      }
+    try {
+      return await appelerAvecPause(transport, requete, modele)
+    } catch (erreur) {
+      if (!(erreur instanceof ErreurLLM)) throw erreur
+      if (erreur.quotaProxy || !REESSAYABLES.has(erreur.statut)) throw erreur
+      derniere = erreur
     }
   }
   throw derniere ?? new ErreurLLM('Aucun modèle disponible pour le moment.', 503)
