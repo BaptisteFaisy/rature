@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Garde de taille (règle user 2026-10-24) : fichiers < 500 lignes,
+ * Garde de taille (règle user d'octobre 2026) : fichiers < 500 lignes,
  * fonctions < 50 lignes. Un fichier qui grossit se découpe, il ne s'accepte pas.
  *
  * Usage : node scripts/check-tokens.mjs [--strict]
