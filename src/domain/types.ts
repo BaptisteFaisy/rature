@@ -78,6 +78,12 @@ export type Progression = {
   etat: EtatEtape
   message?: string
   ms?: number
+  /**
+   * Preuve que l'étape a **réellement** produit quelque chose : « 3 annotations
+   * relevées », « E01, E01, E11 », « garde-fou 3/3 ». C'est ce qui rend le
+   * pipeline lisible et vérifiable, pas une barre qui avance.
+   */
+  preuve?: string
 }
 
 export type Annotation = {

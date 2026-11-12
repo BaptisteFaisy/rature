@@ -128,6 +128,25 @@ export function Diagnostic() {
         </ul>
       )}
 
+      {progression.length > 0 ? (
+        <details className="rounded-xl border border-bord bg-surface p-4">
+          <summary className="cursor-pointer text-sm font-medium text-texte">
+            Trace de l’analyse — ce que chaque étape a produit
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {progression.map((entree) => (
+              <li key={entree.etape} className="text-xs">
+                <span className="font-medium text-texte">
+                  {entree.etape}
+                  {entree.ms !== undefined ? ` · ${entree.ms} ms` : ''}
+                </span>
+                {entree.preuve ? <span className="block text-muet">{entree.preuve}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
       {exercice ? (
         <Bouton onClick={() => aller('exercice')} pleineLargeur>
           Faire l’exercice ciblé sur {exercice.exercice.typeTravaille}

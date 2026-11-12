@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { normaliserZone, zoneBandeau } from '../src/pipeline/anonymize'
 import { blocTaxonomie, messageAnnotations, PROMPT_CLASSIFICATION } from '../src/pipeline/classify'
 import { clientSimule } from '../src/pipeline/client'
+import { codesDe } from '../src/pipeline/orchestrate'
 import {
   genererExerciceVerifie,
   messageGardeFou,
@@ -157,5 +158,12 @@ describe('étapes pures (ingest et anonymisation)', () => {
     const zone = normaliserZone({ x: -0.2, y: 0.9, largeur: 0.5, hauteur: 0.5 })
     expect(zone.x).toBe(0)
     expect(zone.y + zone.hauteur).toBeLessThanOrEqual(1)
+  })
+})
+
+describe('preuves du pipeline', () => {
+  it('la liste des codes est dédupliquée et ordonnée', () => {
+    expect(codesDe([{ code: 'E01' }, { code: 'E01' }, { code: 'E11' }, { code: 'E04' }])).toBe('E01, E11, E04')
+    expect(codesDe([])).toBe('aucune')
   })
 })

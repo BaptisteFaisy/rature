@@ -53,6 +53,14 @@ positif. Les fautes typées avec une confiance < 0,75 sont revérifiées par un 
 (donc rapide) qui confirme, reclasse ou rétrograde en `E99` — sans jamais ajouter de faute. Bornée à
 5 fautes pour tenir la latence.
 
+**Une preuve par étape.** Chaque étape publie, en plus de sa durée, **ce qu'elle a réellement
+produit** : « photo normalisée en 1600 × 2212 px », « bandeau du nom pixelisé (64 % de la largeur) »,
+« 3 annotation(s) relevée(s) sur la copie », « 3 faute(s) typée(s) : E01, E01, E11 », « profil mis à
+jour : type dominant E01 », « exercice tiré de la banque locale sur E01 — garde-fou : 3 critères validés ».
+La preuve est calculée à partir du résultat de l'étape, donc elle ne peut pas mentir ; et elle reste
+visible après l'analyse, dans la « trace de l'analyse » de l'écran Diagnostic. C'est ce qui permet à un
+juge de vérifier le travail sans lire le code.
+
 **Sonde de santé du proxy.** `src/pipeline/sante.ts` interroge `GET /health` (5 s de timeout) au
 chargement et à chaque changement d'adresse. Si l'amont est `ko`, un bandeau propose la
 démonstration ou le BYOK au lieu de laisser l'utilisateur attendre un échec. La pastille d'état est
