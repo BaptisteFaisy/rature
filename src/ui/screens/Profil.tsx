@@ -16,7 +16,7 @@ import { useRature } from '../../etat/useRature'
 
 /** Écran 5 : le profil d'erreur longitudinal (stretch 9 — presque gratuit). */
 export function Profil() {
-  const { profil, diagnostics, aller } = useRature()
+  const { profil, diagnostics, aller, resultat } = useRature()
   const lignes = classement(profil)
   const dominant = typeDominant(profil)
 
@@ -86,6 +86,11 @@ export function Profil() {
       </Carte>
 
       <div className="flex flex-wrap gap-3">
+        {resultat ? (
+          <Bouton variante="secondaire" onClick={() => aller('diagnostic')}>
+            Revoir mon dernier diagnostic
+          </Bouton>
+        ) : null}
         <Bouton variante="secondaire" onClick={() => telechargerCsv(profilEnCsv(profil))}>
           Exporter le profil (CSV)
         </Bouton>
