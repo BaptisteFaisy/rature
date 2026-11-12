@@ -152,10 +152,12 @@ Le produit parle une API [OI]-compatible servie par **InferHub**. Trois modes, d
    - Cloudflare Worker : `worker/worker.js` (`wrangler deploy`, `wrangler secret put INFERHUB_API_KEY`).
 2. **BYOK** : l'utilisateur colle sa clé dans Réglages ; elle part dans l'en-tête `x-rature-cle` et
    reste sur l'appareil. Filet de sécurité si le quota du proxy est épuisé pendant le jugement.
-3. **Mode démonstration** : un bouton de l'accueil rejoue le parcours complet sur une copie
-   d'exemple, avec les réponses du modèle **réellement enregistrées** (`corpus/reponses/`) :
-   aucun appel réseau, aucune clé, et l'UI le dit. C'est le filet de sécurité du jour du
-   jugement.
+3. **Mode démonstration** : l'accueil rejoue le parcours complet sur **trois copies d'exemple**,
+   avec les réponses du modèle **réellement enregistrées** (`corpus/reponses/`) : aucun appel
+   réseau, aucune clé, et l'UI le dit. Trois copies, c'est ce qui rend visibles hors ligne le
+   **profil** et sa **trajectoire** ; le mode professeur a le même bouton (« lot de démonstration »)
+   pour la statistique de classe. Ajouter un enregistrement dans `corpus/reponses/` étend la démo
+   sans toucher au code (découverte au build). C'est le filet de sécurité du jour du jugement.
 
 Variables : voir [`.env.example`](.env.example).
 
