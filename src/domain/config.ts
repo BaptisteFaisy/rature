@@ -28,10 +28,17 @@ export const MAX_LONGUEUR_TEXTE = 400
 /**
  * Bornes d'un appel modèle (crash test du 12/11). Sans elles, un amont saturé
  * fait attendre 6 modèles × 90 s, soit 9 minutes, avant de rendre la main.
- * Mesuré : une image réelle de 476 Ko a mis 90 s puis 504 en pleine saturation.
+ *
+ * Calibrage mesuré, pas deviné :
+ *  - le proxy abandonne un appel amont à 90 s (`DELAI_MS` de `proxy/modal_app.py`) ;
+ *  - le client attend un peu plus (100 s) pour que ce soit le **proxy** qui
+ *    réponde 504 avec un message exploitable, plutôt qu'un avortement local ;
+ *  - un appel texte de 5 tokens a mis 56,7 s le 12/11 à 13 h : un timeout à 60 s
+ *    aurait coupé des appels légitimes.
+ * Le budget global borne l'attente totale à ~2 tentatives dans le pire cas.
  */
-export const DELAI_APPEL_MS = 60_000
-export const BUDGET_APPEL_MS = 130_000
+export const DELAI_APPEL_MS = 100_000
+export const BUDGET_APPEL_MS = 200_000
 
 /** §18.2 : budget total photo → résultat. */
 export const BUDGET_PIPELINE_MS = 20_000

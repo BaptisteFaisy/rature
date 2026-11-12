@@ -77,6 +77,15 @@ InferHub est une place de marché. Mesures du 11 novembre au soir :
 À un instant donné, **5 des 6 modèles vision étaient en 503** : la chaîne de
 repli n'est pas un confort, c'est ce qui fait que l'analyse aboutit.
 
+**Relevé du 12/11 à 13 h (saturation diurne)** : `ag/gemini-4-carbon` en 503,
+`ag/gemini-3.8-flash-high` répond en **56,7 s pour 5 tokens** de sortie, une
+image réelle de 476 Ko finit en **504 après 90 s**. Conclusion écrite noir sur
+blanc : tant que l'amont est une place de marché partagée, la cible « photo →
+diagnostic < 20 s » du cahier des charges **n'est pas tenable en journée**. Elle
+l'est le soir (16 s mesurés à 21 h). C'est un choix d'hébergement du modèle, pas
+un défaut du code — d'où les bornes d'attente côté client (`DELAI_APPEL_MS`,
+`BUDGET_APPEL_MS`) qui évitent d'attendre 9 minutes avant de le dire.
+
 Trois réponses dans le code :
 
 1. **Chaîne de repli sur les 6 modèles `ag/`** (`src/domain/config.ts`,

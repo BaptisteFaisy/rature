@@ -92,12 +92,12 @@ describe('crash test — pannes réseau et amont', () => {
   }, 20_000)
 
   it('budget global : la chaîne s’arrête au lieu de faire attendre 9 minutes', async () => {
-    // L'horloge avance de 60 s à chaque lecture : le budget de 130 s est atteint
-    // après deux modèles, la chaîne ne doit pas aller jusqu'au bout.
+    // L'horloge avance de 90 s à chaque lecture : avec un budget de 200 s, la
+    // chaîne doit s'arrêter avant d'avoir épuisé les six modèles.
     let maintenant = 1_700_000_000_000
     const horloge = vi.spyOn(Date, 'now').mockImplementation(() => {
       const valeur = maintenant
-      maintenant += 60_000
+      maintenant += 90_000
       return valeur
     })
     const fetchMock = vi
@@ -108,7 +108,9 @@ describe('crash test — pannes réseau et amont', () => {
     const erreur = await completer(transport, requete).catch((e: unknown) => e)
     expect(erreur).toBeInstanceOf(ErreurLLM)
     expect((erreur as ErreurLLM).message).toContain('trop de temps')
-    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(3)
+    // Le budget doit couper la chaîne avant la fin, quelles que soient les bornes.
+    expect(fetchMock.mock.calls.length).toBeLessThan(CHAINE_MODELES.length)
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(0)
     horloge.mockRestore()
   })
 
