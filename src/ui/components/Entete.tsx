@@ -3,6 +3,9 @@ import type { Ecran } from '../../etat/useRature'
 
 const LIENS: { ecran: Ecran; libelle: string }[] = [
   { ecran: 'accueil', libelle: 'Copie' },
+  // Entrée directe : sans elle, le diagnostic et l'exercice n'étaient atteignables
+  // qu'en sortant d'une analyse — invisibles après la démonstration complète.
+  { ecran: 'diagnostic', libelle: 'Diagnostic' },
   { ecran: 'profil', libelle: 'Profil' },
   { ecran: 'prof', libelle: 'Prof' },
   { ecran: 'apropos', libelle: 'Comment ça marche' },
