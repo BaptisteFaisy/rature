@@ -5,7 +5,7 @@
 
 [![Démo publique](https://img.shields.io/badge/démo-publique-f5c518?style=flat-square)](https://baptistefaisy.github.io/rature/)
 [![CI](https://img.shields.io/github/actions/workflow/status/BaptisteFaisy/rature/ci.yml?branch=main&label=ci&style=flat-square)](https://github.com/BaptisteFaisy/rature/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-49%20verts-3ecf8e?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-170%20verts-3ecf8e?style=flat-square)](tests)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-9aa3b2?style=flat-square)](LICENSE)
 
 Projet soumis à **IceHacks 2026** (CodeStarters, Devpost).
@@ -136,9 +136,9 @@ notation automatique de la copie. Restreindre le périmètre est une décision d
 ```bash
 npm ci
 npm run dev        # http://localhost:5173
-npm test           # 41 tests, aucun réseau
+npm test           # 170 tests, aucun réseau
 npm run typecheck
-npm run build      # dist/ — 94 Ko gzip
+npm run build      # dist/ — 112 Ko gzip
 ```
 
 Node ≥ 20. Aucune dépendance payante.
@@ -171,7 +171,7 @@ Variables : voir [`.env.example`](.env.example).
 | RNF-04 | faux positifs sur copie propre | 0 toléré | test dédié : 0 appel, 0 faute |
 | RNF-05 | mobile (photo directe) | obligatoire | `capture="environment"`, cibles ≥ 48 px |
 | RNF-06 | accessibilité AA, clavier, ≥ 16 px | obligatoire | focus visible, `aria-live`, textes ≥ 16 px |
-| RNF-07 | bundle initial | < 300 Ko gzip | 94 Ko gzip |
+| RNF-07 | bundle initial | < 300 Ko gzip | 112 Ko gzip |
 | RNF-08 | disponibilité pendant le jugement | 24h/24 | GitHub Pages (statique, sans backend) |
 | RNF-09 | quota épuisé → message clair + BYOK | obligatoire | 429 traduit en français, champ BYOK |
 | RNF-10 | aucune dépendance payante | obligatoire | 0 $ |

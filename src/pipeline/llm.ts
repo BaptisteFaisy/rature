@@ -117,7 +117,14 @@ async function appeler(transport: Transport, requete: RequeteLLM, modele: string
   // donc ni repli sur le modèle suivant, ni message lisible (bug du 11/11).
   if (!reponse.ok) throw await erreurDepuisReponse(reponse)
 
-  const data = (await reponse.json()) as ReponseProxy
+  // Un corps non-JSON (page d'erreur d'un hébergeur, proxy qui rend du HTML)
+  // ne doit pas fuir en SyntaxError : on traduit en ErreurLLM exploitable.
+  let data: ReponseProxy
+  try {
+    data = (await reponse.json()) as ReponseProxy
+  } catch {
+    throw new ErreurLLM('Réponse du proxy illisible (JSON attendu).', 502)
+  }
   const texte = typeof data.texte === 'string' ? data.texte : ''
   if (texte.trim().length === 0) throw new ErreurLLM('Réponse vide du modèle.', 502)
   return texte

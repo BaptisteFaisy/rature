@@ -5,7 +5,7 @@
 ```bash
 npm ci
 npm run dev        # http://localhost:5173
-npm test           # 41 tests, aucun réseau, aucun quota consommé
+npm test           # 170 tests, aucun réseau, aucun quota consommé
 npm run typecheck
 npm run build      # dist/
 node scripts/check-tokens.mjs   # garde de taille des fichiers et fonctions

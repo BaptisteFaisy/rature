@@ -10,6 +10,7 @@
 import { CODE_NON_TYPEE, estCodeConnu, estPonderee, libelleDe } from './taxonomy'
 import type { CodeErreur } from './taxonomy'
 import { SEUIL_CONFIANCE } from './config'
+import { confianceAssainie, texteAssaini, zoneAssainie } from './tolerance'
 import type { Erreur, Diagnostic } from './types'
 
 export type ErreurBrute = {
@@ -20,29 +21,23 @@ export type ErreurBrute = {
   zone?: unknown
 }
 
-function borneConfiance(valeur: unknown): number {
-  const n = typeof valeur === 'number' && Number.isFinite(valeur) ? valeur : 0
-  return Math.min(1, Math.max(0, n))
-}
-
-function texte(valeur: unknown, repli: string): string {
-  return typeof valeur === 'string' && valeur.trim().length > 0 ? valeur.trim() : repli
-}
-
-/** Normalise une entrée brute du modèle en Erreur typée, seuil appliqué. */
+/**
+ * Normalise une entrée brute en Erreur typée : seuil de confiance appliqué,
+ * textes bornés, zone assainie. Les invariants tiennent quel que soit
+ * l'appelant (pipeline, seconde passe, ou test).
+ */
 export function normaliserErreur(brute: ErreurBrute): Erreur {
-  const confiance = borneConfiance(brute.confiance)
+  const confiance = confianceAssainie(brute.confiance)
   const code: CodeErreur = estCodeConnu(brute.code) && confiance >= SEUIL_CONFIANCE ? brute.code : CODE_NON_TYPEE
+  const zone = zoneAssainie(brute.zone)
   return {
     code,
     libelle: libelleDe(code),
-    ligne: texte(brute.ligne, 'Ligne non localisée'),
-    explication: texte(brute.explication, 'À revoir avec ton professeur.'),
+    ligne: texteAssaini(brute.ligne, 'Ligne non localisée'),
+    explication: texteAssaini(brute.explication, 'À revoir avec ton professeur.'),
     confiance,
     ponderee: estPonderee(code),
-    ...(typeof brute.zone === 'object' && brute.zone !== null
-      ? { zone: brute.zone as Erreur['zone'] }
-      : {}),
+    ...(zone ? { zone } : {}),
   }
 }
 
