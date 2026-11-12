@@ -7,6 +7,7 @@ import { SectionConfidentialite } from '../components/apropos/SectionConfidentia
 import { SectionMesures } from '../components/apropos/SectionMesures'
 import { SectionOutilsIA } from '../components/apropos/SectionOutilsIA'
 import { SectionLiens } from '../components/apropos/SectionLiens'
+import { PanneauSante } from '../components/PanneauSante'
 
 /**
  * Écran « Comment ça marche » : la page qui rend visible la valeur du produit —
@@ -44,6 +45,7 @@ export function CommentCaMarche() {
       <SectionGardeFou />
       <SectionConfidentialite />
       <SectionMesures />
+      <PanneauSante />
       <SectionOutilsIA />
       <SectionLiens />
     </div>
