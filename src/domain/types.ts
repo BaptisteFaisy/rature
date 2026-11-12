@@ -95,9 +95,14 @@ export type Extraction = {
   nomDetecte?: string
 }
 
+/** Bilan de la seconde passe (lot 3) : affichée pour la transparence. */
+export type BilanRevue = { revues: number; modifiees: number }
+
 export type ResultatAnalyse = {
   diagnostic: Diagnostic
   extraction: Extraction
+  /** Nombre de fautes revérifiées et modifiées par la seconde passe. */
+  revue?: BilanRevue
   /** Image anonymisée, en mémoire de session uniquement : jamais persistée. */
   imageAnonymisee: string
   exercice: ExerciceVerifie | null

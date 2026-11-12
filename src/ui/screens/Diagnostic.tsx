@@ -50,7 +50,7 @@ function LigneErreur({
 
 /** Écran 4 : le diagnostic — où travailler, sans jugement. */
 export function Diagnostic() {
-  const { resultat, aller, demo } = useRature()
+  const { resultat, aller, demoId, progression } = useRature()
   const [selection, setSelection] = useState<number | null>(null)
   const refs = useRef<(HTMLLIElement | null)[]>([])
 
@@ -64,8 +64,10 @@ export function Diagnostic() {
     )
   }
 
-  const { diagnostic, imageAnonymisee, exercice, messageExercice } = resultat
+  const { diagnostic, imageAnonymisee, exercice, messageExercice, revue } = resultat
   const copiePropre = diagnostic.nbFautes === 0
+  const demo = demoId ? origineDemo(demoId) : null
+  const msTotal = progression.reduce((somme, etape) => somme + (etape.ms ?? 0), 0)
 
   /** Clic sur une faute de la liste : sélection + zoom sur sa zone. */
   const choisir = (index: number) => {
@@ -82,10 +84,17 @@ export function Diagnostic() {
 
       {demo ? (
         <p className="rounded-lg border border-bord bg-surface-2 px-3 py-2 text-xs text-muet">
-          Démonstration : réponses du modèle ({origineDemo().modele}) enregistrées le{' '}
-          {origineDemo().enregistreLe.slice(0, 10)} sur une copie d’exemple. Aucun appel réseau.
+          Démonstration — {demo.titre} : réponses du modèle ({demo.modele}) enregistrées le{' '}
+          {demo.enregistreLe.slice(0, 10)}. Aucun appel réseau.
         </p>
       ) : null}
+
+      <p className="text-xs text-muet">
+        {msTotal > 0 ? `Analyse en ${(msTotal / 1000).toFixed(1)} s · ` : ''}
+        {revue && revue.revues > 0
+          ? `${revue.revues} faute(s) peu sûre(s) revérifiée(s), ${revue.modifiees} corrigée(s)`
+          : 'aucune faute n’a eu besoin d’une seconde vérification'}
+      </p>
 
       <CopieAnnotee
         src={imageAnonymisee}
