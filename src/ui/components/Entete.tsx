@@ -12,6 +12,35 @@ const LIENS: { ecran: Ecran; libelle: string }[] = [
   { ecran: 'reglages', libelle: 'Réglages' },
 ]
 
+/** Badge discret : l'analyse continue pendant que l'utilisateur navigue. */
+function BadgeAnalyse() {
+  const { occupe, diagnosticPret, aller, ecran } = useRature()
+  if (ecran === 'analyse') return null
+  if (occupe) {
+    return (
+      <button
+        type="button"
+        onClick={() => aller('analyse')}
+        className="etape-en-cours rounded-full border border-jaune/60 px-3 py-1 text-xs text-jaune"
+      >
+        Analyse en cours…
+      </button>
+    )
+  }
+  if (diagnosticPret) {
+    return (
+      <button
+        type="button"
+        onClick={() => aller('diagnostic')}
+        className="rounded-full border border-vert/60 px-3 py-1 text-xs text-vert"
+      >
+        Diagnostic prêt
+      </button>
+    )
+  }
+  return null
+}
+
 export function Entete() {
   const { ecran, aller } = useRature()
   return (
@@ -23,6 +52,7 @@ export function Entete() {
       >
         Raturé <span aria-hidden="true">🖊️</span>
       </button>
+      <BadgeAnalyse />
       <nav aria-label="Navigation principale" className="flex gap-1">
         {LIENS.map((lien) => (
           <button

@@ -37,6 +37,9 @@ export const MAX_LONGUEUR_TEXTE = 400
  *    aurait coupé des appels légitimes.
  * Le budget global borne l'attente totale à ~2 tentatives dans le pire cas.
  */
+/** Le cache local évite de repayer un appel pour une photo déjà analysée. */
+export const CACHE_ACTIVE_PAR_DEFAUT = true
+
 export const DELAI_APPEL_MS = 100_000
 export const BUDGET_APPEL_MS = 200_000
 
@@ -54,6 +57,8 @@ export const CLES = {
   diagnostics: 'rature/diagnostics',
   profil: 'rature/profil',
   reglages: 'rature/reglages',
+  /** Préfixe du cache local des analyses (empreinte SHA-256 de l'image). */
+  cache: 'rature/cache',
 } as const
 
 /**

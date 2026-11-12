@@ -1,0 +1,72 @@
+name: latence
+
+# Relevé horaire de la latence et de la disponibilité de l'amont (idée 10 du
+# brassage « rester sur InferHub »).
+#
+# Trois usages : choisir l'heure du tournage de la vidéo sur des données plutôt
+# qu'à l'intuition, prouver la disponibilité pendant le jugement (RNF-08), et
+# documenter honnêtement la contrainte d'un amont qui est une place de marché.
+#
+# Le relevé est publié sur la branche `donnees/latence` : `main` est protégé par
+# un ruleset (PR obligatoire), un push automatique y serait refusé.
+#
+# Le job ne doit JAMAIS être rouge : un relevé raté ne doit pas déclencher
+# d'alerte ni casser quoi que ce soit.
+on:
+  schedule:
+    # Minute décalée des crons horaires usuels, pour éviter les rafales.
+    - cron: '7 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: latence
+  cancel-in-progress: true
+
+jobs:
+  relever:
+    name: relever la latence de l'amont
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Sonde
+        shell: bash
+        env:
+          INFERHUB_API_KEY: ${{ secrets.INFERHUB_API_KEY }}
+        run: |
+          set -uo pipefail
+          node scripts/sonder-latence.mjs || echo "sonde ignorée"
+
+      - name: Publication sur la branche de données
+        shell: bash
+        env:
+          PAT: ${{ secrets.AUTOMERGE_PAT }}
+        run: |
+          set -uo pipefail
+          [ -f docs/LATENCE.md ] || { echo "aucun relevé à publier"; exit 0; }
+          git config user.name "BaptisteFaisy"
+          git config user.email "baptiste.faisy@gmail.com"
+          BRANCHE="donnees/latence"
+          git fetch origin "$BRANCHE" 2>/dev/null || true
+          if git rev-parse --verify "origin/$BRANCHE" >/dev/null 2>&1; then
+            git checkout -B "$BRANCHE" "origin/$BRANCHE"
+          else
+            git checkout --orphan "$BRANCHE"
+            git rm -rf --quiet . || true
+          fi
+          mkdir -p docs
+          cp docs/LATENCE.md /tmp/LATENCE.md 2>/dev/null || true
+          [ -f /tmp/LATENCE.md ] && cp /tmp/LATENCE.md docs/LATENCE.md
+          git add -f docs/LATENCE.md || true
+          git commit -m "latence : relevé horaire $(date -u +%FT%TZ)" || echo "rien à publier"
+          git push --force "https://x-access-token:${PAT}@github.com/${{ github.repository }}.git" "$BRANCHE:$BRANCHE" \
+            || echo "publication impossible (la branche sera mise à jour au prochain passage)"
+          exit 0

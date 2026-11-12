@@ -48,7 +48,12 @@ export type Exercice = {
   /** Type d'erreur travaillé — vérifié par le garde-fou (§18.3). */
   typeTravaille: CodeErreur
   niveau: string
+  /** 0 = tiré de la banque locale (aucun appel réseau) ; ≥ 1 = généré par le modèle. */
   tentative: number
+  /** Identifiant de l'exercice (banque) ou « modele-N » pour un exercice inédit. */
+  id?: string
+  /** Provenance : locale ou modèle. */
+  source?: 'banque' | 'modele'
 }
 
 export type VerdictGardeFou = {

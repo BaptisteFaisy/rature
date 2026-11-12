@@ -45,6 +45,21 @@ Réduire le **nombre d'appels** rapporte bien plus que d'optimiser chacun d'eux.
 
 ---
 
+## Où en sont les 10 idées (12/11, 15 h 30)
+
+| # | Idée | État | Où |
+|---|---|---|---|
+| 1 | Banque d'exercices locale | ✅ fait | `src/domain/banque.ts` (36 exercices, 12 types × 3 difficultés), testée par mots-clés de geste ; l'étape 6 ne coûte **aucun** appel |
+| 2 | Chaîne de repli + disjoncteur côté proxy | ✅ fait | `proxy/modal_app.py` : chaîne serveur, cooldown 60 s par modèle, réponse `{"modele", "tentatives"}` |
+| 3 | Pré-warm du proxy | ✅ fait | `.github/workflows/prewarm.yml` (cron 5 min) |
+| 4 | Cache par empreinte d'image | ✅ fait, **côté client** | `src/storage/cache.ts` : SHA-256 + IndexedDB, TTL 24 h, plafond 40 entrées. **Écart assumé** : pas de cache serveur, le texte extrait d'une copie d'élève ne doit pas quitter l'appareil (RNF-P3) |
+| 5 | Sonde de disponibilité des modèles | ✅ fait | `/modeles` du proxy (état du disjoncteur) → la chaîne client est réordonnée |
+| 6 | Sortie bornée | ✅ fait | prompts réécrits (JSON compact, ≤ 15 mots) + plafonds `maxTokens` abaissés : l'appel vision passe de ~15 s à ~12 s |
+| 7 | Streaming SSE | ✅ fait | le proxy publie `progres` puis `resultat` ; le client les relaie à l'écran (« modèle 2/6 : 503, essai suivant ») |
+| 8 | Mode asynchrone | ✅ fait | « Continuer sans attendre », badge « analyse en cours » puis « diagnostic prêt » |
+| 9 | Arbitrage sur les préférences InferHub | ⚠️ **à faire par toi** | le proxy relaie désormais `x-max-input-price` / `x-max-output-price` si `RATURE_MAX_IN_PRICE` / `RATURE_MAX_OUT_PRICE` sont posées — mais avec la clé actuelle, l'enchère est **sans effet** (testé jusqu'à 0,5/3 : toujours 402). Le plafond est dans les préférences du compte |
+| 10 | Banc de latence horaire | ✅ fait | `scripts/sonder-latence.mjs` + `.github/workflows/latence.yml` → `docs/LATENCE.md` (branche `donnees/latence`) |
+
 ## A. Disponibilité de l'amont (1-14)
 
 1. Chaîne de repli **côté proxy** : le client fait un appel, le proxy descend les modèles.

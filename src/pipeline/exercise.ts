@@ -8,6 +8,7 @@
 import generationMd from '../../prompts/generation.md?raw'
 import gardeFouMd from '../../prompts/garde-fou.md?raw'
 import { MAX_TENTATIVES_EXERCICE } from '../domain/config'
+import { exercicePour, exerciceVerifie } from '../domain/banque'
 import { libelleDe, signatureDe } from '../domain/taxonomy'
 import type { CodeErreur } from '../domain/taxonomy'
 import type { Exercice, ExerciceVerifie, VerdictGardeFou } from '../domain/types'
@@ -25,6 +26,16 @@ export type ArgsExercice = {
   niveau?: string
   transport: Transport
   client?: ClientBrut
+  /**
+   * false (défaut) : exercice tiré de la **banque locale** — aucun appel réseau,
+   * donc l'étape 6 est instantanée (idée 1). true : exercice inédit, généré et
+   * vérifié par le modèle (2 appels, 30 à 110 s sur l'amont).
+   */
+  inedit?: boolean
+  /** Identifiants d'exercices déjà proposés, pour en servir un autre. */
+  dejaVus?: string[]
+  /** Graine de tirage : la banque reste déterministe à options égales. */
+  graine?: number
 }
 
 export function messageGeneration(typeDominant: CodeErreur, extraitCopie: string, niveau: string): string {
@@ -67,7 +78,7 @@ async function proposer(args: ArgsExercice, client: ClientBrut, tentative: numbe
     user: messageGeneration(args.typeDominant, args.extraitCopie, niveau),
     json: true,
     temperature: 0.5,
-    maxTokens: 1200,
+    maxTokens: 800,
   })
   const brut = parserExercice(texte)
   return {
@@ -77,6 +88,8 @@ async function proposer(args: ArgsExercice, client: ClientBrut, tentative: numbe
     typeTravaille: args.typeDominant,
     niveau: brut.niveau || niveau,
     tentative,
+    id: `modele-${tentative}`,
+    source: 'modele',
   }
 }
 
@@ -90,9 +103,32 @@ async function juger(
     user: messageGardeFou(exercice, args.typeDominant, args.extraitCopie),
     json: true,
     temperature: 0,
-    maxTokens: 500,
+    maxTokens: 400,
   })
   return parserVerdict(texte)
+}
+
+/**
+ * Point d'entrée de l'étape 6 : banque locale par défaut, modèle uniquement
+ * pour un « exercice inédit » demandé explicitement.
+ */
+export async function obtenirExercice(
+  args: ArgsExercice,
+): Promise<{ exercice: ExerciceVerifie | null; message?: string }> {
+  if (!args.inedit) {
+    const tirage = exercicePour(args.typeDominant, {
+      ...(args.dejaVus ? { exclure: args.dejaVus } : {}),
+      ...(args.graine !== undefined ? { graine: args.graine } : {}),
+    })
+    if (!tirage) {
+      return {
+        exercice: null,
+        message: `Pas d'exercice dans la banque pour ce type (${libelleDe(args.typeDominant)}).`,
+      }
+    }
+    return { exercice: exerciceVerifie(tirage) }
+  }
+  return genererExerciceVerifie(args)
 }
 
 export async function genererExerciceVerifie(

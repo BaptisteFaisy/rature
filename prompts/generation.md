@@ -1,3 +1,5 @@
+<!-- v2 — sortie bornée, 12/11 -->
+
 # Prompt — Génération d'un exercice ciblé
 
 Tu écris **un** exercice de mathématiques pour un élève de lycée, destiné à
@@ -16,19 +18,24 @@ la mécanique précise qui lui fait perdre des points.
    là.
 4. **Pas la solution de l'exercice d'origine.** Tu peux réutiliser la
    structure, jamais les mêmes nombres ni le même énoncé.
-5. `solution` est une correction courte et **détaillée sur le point visé** :
-   c'est l'explication de la mécanique, pas seulement le résultat final.
-6. `indices` : 1 à 2 amorces, jamais la réponse.
-7. Ton bienveillant. Aucune phrase qui juge l'élève.
+5. `enonce` : **60 mots maximum** — l'énoncé seul, pas de couple, pas de
+   remarque.
+6. `solution` : **60 mots maximum**, correction courte et **détaillée sur le
+   point visé** : c'est l'explication de la mécanique, pas seulement le
+   résultat final.
+7. `indices` : **une seule amorce** (**20 mots maximum**), jamais la réponse.
+8. `niveau` : **un seul mot** (ex. `seconde`, `premiere`, `terminale`).
+9. **Pas de champ `typeTravaille`** : l'application sait déjà quel type elle
+   travaille, inutile de le répéter.
+10. Ton bienveillant. Aucune phrase qui juge l'élève.
 
-## Sortie — JSON strict, rien d'autre
+## Sortie — une ligne de JSON, rien d'autre
 
-```json
-{
-  "enonce": "Développe et réduis : -2(3x - 5) + 4(x - 1)",
-  "indices": ["Écris d'abord le développement de chaque produit, sans rien supprimer."],
-  "solution": "-2(3x-5) = -6x + 10 ; 4(x-1) = 4x - 4 ; total -2x + 6. Le piège : -2 × (-5) = +10.",
-  "typeTravaille": "E01",
-  "niveau": "seconde"
-}
-```
+- **Uniquement l'objet JSON** : aucun mot avant, aucun mot après, aucun
+  commentaire.
+- **Une seule ligne**, sans indentation, sans saut de ligne.
+- **Pas de bloc de code markdown** autour : le parseur lit le JSON nu, les
+  balises ne servent qu'à coûter des tokens.
+
+Exemple (une seule ligne) :
+`{"enonce":"Développe et réduis : -2(3x - 5) + 4(x - 1)","indices":["Écris d'abord le développement de chaque produit, sans rien supprimer."],"solution":"-2(3x-5) = -6x + 10 ; 4(x-1) = 4x - 4 ; total -2x + 6. Le piège : -2 × (-5) = +10.","niveau":"seconde"}`
