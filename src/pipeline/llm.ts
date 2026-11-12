@@ -8,7 +8,13 @@
  *
  * Aucun secret ici : ce module tourne dans le navigateur, sans clé embarquée.
  */
-import { CHAINE_MODELES, MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../domain/config'
+import {
+  BUDGET_APPEL_MS,
+  CHAINE_MODELES,
+  DELAI_APPEL_MS,
+  MODELE_PAR_DEFAUT,
+  PROXY_PAR_DEFAUT,
+} from '../domain/config'
 
 export type RequeteLLM = {
   system: string
@@ -108,8 +114,12 @@ async function appeler(transport: Transport, requete: RequeteLLM, modele: string
       method: 'POST',
       headers: entetes,
       body: JSON.stringify(construireCorps(requete, modele)),
+      signal: AbortSignal.timeout(DELAI_APPEL_MS),
     })
-  } catch {
+  } catch (erreur) {
+    if (erreur instanceof Error && erreur.name === 'TimeoutError') {
+      throw new ErreurLLM('Le modèle met trop de temps à répondre.', 504)
+    }
     throw new ErreurLLM('Réseau indisponible. Vérifie ta connexion puis réessaie.', 0)
   }
 
@@ -178,7 +188,13 @@ async function appelerAvecPause(
  */
 export async function completer(transport: Transport, requete: RequeteLLM): Promise<string> {
   let derniere: ErreurLLM | null = null
+  let arreteeParBudget = false
+  const echeance = Date.now() + BUDGET_APPEL_MS
   for (const modele of chaineModeles(transport)) {
+    if (Date.now() > echeance) {
+      arreteeParBudget = true
+      break
+    }
     try {
       return await appelerAvecPause(transport, requete, modele)
     } catch (erreur) {
@@ -186,6 +202,12 @@ export async function completer(transport: Transport, requete: RequeteLLM): Prom
       if (erreur.quotaProxy || !REESSAYABLES.has(erreur.statut)) throw erreur
       derniere = erreur
     }
+  }
+  if (arreteeParBudget) {
+    throw new ErreurLLM(
+      "L'amont met trop de temps à répondre. Réessaie dans quelques minutes, ou lance la démonstration.",
+      504,
+    )
   }
   throw derniere ?? new ErreurLLM('Aucun modèle disponible pour le moment.', 503)
 }

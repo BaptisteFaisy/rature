@@ -3,7 +3,7 @@
 Objectif : vérifier que le produit ne casse ni sur des **données hostiles**, ni sur le
 **volume**, ni en cas de **panne**. Trois volets, tous automatisés sauf le dernier.
 
-Résumé : **74 tests de crash ajoutés** (170 tests au total), **6 défauts réels trouvés et
+Résumé : **75 tests de crash ajoutés** (171 tests au total), **8 défauts réels trouvés et
 corrigés**, un comportement d'infrastructure documenté honnêtement (quota best-effort).
 
 ---
@@ -30,6 +30,7 @@ une copie sans annotation valide reste « propre » (RNF-04).
 | 4 | Zones non assainies | `x: -3` ou `largeur: 1e9` → rectangle hors écran, mise en page cassée | `zoneAssainie()` : nombres finis, ramenés dans [0,1], largeur/hauteur contenues ; sinon zone écartée et l'annotation reste valable |
 | 5 | Corps de réponse non-JSON sur un 200 | `SyntaxError` nue → message brut en anglais dans l'UI | traduction en `ErreurLLM` « Réponse du proxy illisible » |
 | 6 | Verdict de garde-fou absent/illisible | silence = exercice servi sans vérification | tout champ manquant vaut `false` : **un verdict illisible est un refus** |
+| 8 | **Attente non bornée** : 6 modèles × 90 s de timeout proxy = jusqu'à 9 minutes avant de rendre la main | l'utilisateur reste devant un écran d'analyse sans fin | timeout de 60 s **par appel** (`AbortSignal.timeout`) + **budget global de 130 s** sur toute la chaîne, puis message explicite proposant la démonstration |
 
 Le nouveau module `src/domain/tolerance.ts` centralise ces règles (bornes, assainissement,
 plafonds) : aucune duplication entre l'extraction, l'analyse fusionnée, la classification et la
@@ -96,6 +97,11 @@ légitimement l'état vide.
 - **25 appels `/analyze` en parallèle** (texte court) : 14 succès, 2 timeouts amont (504),
   2 erreurs internes Modal (500, « function was terminated by signal »), le reste en 200.
   Les statuts 500/504 font partie de la chaîne de repli côté client : ils sont rejoués.
+- **Corps de 16 Mo** : `413` et « Photo trop lourde (15 Mo max après encodage) » en 4,5 s — la
+  garde de taille tient en production.
+- **Image réelle de 476 Ko en pleine saturation** : `504` après 90 s (timeout du proxy sur
+  l'amont). C'est ce cas précis qui a révélé le défaut n° 8 : sans budget global, le navigateur
+  aurait enchaîné six fois 90 s.
 
 **Constat honnête sur le quota** : aucun 429 n'a été observé sur 25 appels parallèles. Le quota est
 en mémoire **par conteneur** et Modal recycle ses instances sous charge (les deux 500 observés) :

@@ -91,6 +91,27 @@ describe('crash test — pannes réseau et amont', () => {
     expect(appel).toBeLessThanOrEqual(CHAINE_MODELES.length + 1)
   }, 20_000)
 
+  it('budget global : la chaîne s’arrête au lieu de faire attendre 9 minutes', async () => {
+    // L'horloge avance de 60 s à chaque lecture : le budget de 130 s est atteint
+    // après deux modèles, la chaîne ne doit pas aller jusqu'au bout.
+    let maintenant = 1_700_000_000_000
+    const horloge = vi.spyOn(Date, 'now').mockImplementation(() => {
+      const valeur = maintenant
+      maintenant += 60_000
+      return valeur
+    })
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => reponseBrute(503, '{"erreur":"no available provider"}'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const erreur = await completer(transport, requete).catch((e: unknown) => e)
+    expect(erreur).toBeInstanceOf(ErreurLLM)
+    expect((erreur as ErreurLLM).message).toContain('trop de temps')
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(3)
+    horloge.mockRestore()
+  })
+
   it('corps invalide ou vide : ErreurLLM, jamais une SyntaxError', async () => {
     vi.stubGlobal(
       'fetch',

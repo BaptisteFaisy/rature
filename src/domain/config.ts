@@ -25,6 +25,14 @@ export const MAX_ANNOTATIONS = 50
 export const MAX_LONGUEUR_LIGNE = 300
 export const MAX_LONGUEUR_TEXTE = 400
 
+/**
+ * Bornes d'un appel modèle (crash test du 12/11). Sans elles, un amont saturé
+ * fait attendre 6 modèles × 90 s, soit 9 minutes, avant de rendre la main.
+ * Mesuré : une image réelle de 476 Ko a mis 90 s puis 504 en pleine saturation.
+ */
+export const DELAI_APPEL_MS = 60_000
+export const BUDGET_APPEL_MS = 130_000
+
 /** §18.2 : budget total photo → résultat. */
 export const BUDGET_PIPELINE_MS = 20_000
 
