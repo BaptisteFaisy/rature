@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../../domain/config'
 import type { Reglages as ReglagesType } from '../../domain/types'
 import { Bouton } from '../components/Bouton'
+import { PanneauSante } from '../components/PanneauSante'
 import { Carte } from '../components/Carte'
 import { useRature } from '../../etat/useRature'
 
@@ -71,6 +72,8 @@ export function Reglages() {
       >
         {confirme ? 'Réglages enregistrés' : 'Enregistrer'}
       </Bouton>
+
+      <PanneauSante />
 
       <Carte titre="Confidentialité" ton="vert">
         <ul className="list-inside list-disc space-y-1 text-sm text-muet">
