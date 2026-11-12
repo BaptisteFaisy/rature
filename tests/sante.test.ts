@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { reordonner, sonderModeles, sonderProxy, urlSante } from '../src/pipeline/sante'
+import { controleBanque, controleBudget, controleTaxonomie } from '../src/pipeline/diagnostic'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -74,5 +75,21 @@ describe('sonde de disponibilité des modèles (idée 5)', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('ko')))
     await expect(sonderModeles('https://h.modal.run/analyze')).resolves.toBeNull()
     await expect(sonderModeles('/api/analyze')).resolves.toBeNull()
+  })
+})
+
+describe('auto-vérification (preuves par sous-système)', () => {
+  it('la banque est jugée complète seulement si les 12 types ont 3 exercices', () => {
+    const controle = controleBanque()
+    expect(controle.ok).toBe(true)
+    expect(controle.preuve).toContain('36 exercices')
+    expect(controle.preuve).toContain('0 appel réseau')
+  })
+
+  it('la taxonomie et le budget d’attente sont vérifiés par des faits', () => {
+    expect(controleTaxonomie().ok).toBe(true)
+    expect(controleTaxonomie().preuve).toContain('12 codes')
+    expect(controleBudget().ok).toBe(true)
+    expect(controleBudget().preuve).toMatch(/\d+ s par appel/)
   })
 })
