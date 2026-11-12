@@ -1,11 +1,13 @@
 import { Bouton } from '../components/Bouton'
 import { BandeauSante } from '../components/BandeauSante'
 import { Carte } from '../components/Carte'
+import { COPIES_DEMO, ID_COPIES_DEMO } from '../../pipeline/demo'
 import { useRature } from '../../etat/useRature'
 
 /** Écran 1 : un seul bouton. Pas d'explication avant l'action (§21). */
 export function Accueil() {
   const { aller, profil, analyserDemo, occupe } = useRature()
+  const plusieurs = ID_COPIES_DEMO.length > 1
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -28,8 +30,14 @@ export function Accueil() {
         <Bouton variante="discret" onClick={() => void analyserDemo()} disabled={occupe}>
           Pas de copie sous la main ? Lancer la démonstration
         </Bouton>
+        {plusieurs ? (
+          <Bouton variante="discret" onClick={() => void analyserDemo(ID_COPIES_DEMO)} disabled={occupe}>
+            Démonstration complète ({ID_COPIES_DEMO.length} copies → profil et trajectoire)
+          </Bouton>
+        ) : null}
         <p className="text-center text-xs text-muet">
-          Réponses du modèle enregistrées sur une copie d’exemple — aucun appel réseau.
+          Réponses du modèle réellement enregistrées sur {COPIES_DEMO.length} copie(s) d’exemple —
+          aucun appel réseau, aucune clé.
         </p>
       </div>
 

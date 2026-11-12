@@ -5,6 +5,7 @@ const LIENS: { ecran: Ecran; libelle: string }[] = [
   { ecran: 'accueil', libelle: 'Copie' },
   { ecran: 'profil', libelle: 'Profil' },
   { ecran: 'prof', libelle: 'Prof' },
+  { ecran: 'apropos', libelle: 'Comment ça marche' },
   { ecran: 'reglages', libelle: 'Réglages' },
 ]
 

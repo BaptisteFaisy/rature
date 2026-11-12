@@ -1,4 +1,5 @@
 import { Accueil } from './screens/Accueil'
+import { CommentCaMarche } from './screens/CommentCaMarche'
 import { Analyse } from './screens/Analyse'
 import { Cadrage } from './screens/Cadrage'
 import { Diagnostic } from './screens/Diagnostic'
@@ -20,6 +21,7 @@ const ECRANS: Record<Ecran, () => JSX.Element> = {
   exercice: Exercice,
   prof: Prof,
   reglages: Reglages,
+  apropos: CommentCaMarche,
 }
 
 /** Routeur maison : un état, huit écrans, aucune dépendance externe. */

@@ -71,10 +71,11 @@ export async function analyserCopie(
   const { extraction } = analyse
   // Étape 4 : les règles restent locales (seuil 0,6, E99, E11 pondérée à 0),
   // puis seconde passe sur les fautes peu sûres — cible : zéro faux positif.
-  const erreurs = await etape('classifie', publier, async () => {
+  const classification = await etape('classifie', publier, async () => {
     const revue = await revoirFautesPeuSures(analyse.erreurs, options.transport, options.client)
-    return revue.erreurs
+    return { erreurs: revue.erreurs, bilan: { revues: revue.revues, modifiees: revue.modifiees } }
   })
+  const erreurs = classification.erreurs
 
   const diagnostic = await etape('agrege', publier, async () =>
     construireDiagnostic(erreurs, {
@@ -89,6 +90,7 @@ export async function analyserCopie(
     diagnostic,
     extraction,
     imageAnonymisee: anonyme.dataUrl,
+    revue: classification.bilan,
     exercice: null,
     messageExercice: 'Exercice en préparation…',
   })
@@ -98,6 +100,7 @@ export async function analyserCopie(
     diagnostic,
     extraction,
     imageAnonymisee: anonyme.dataUrl,
+    revue: classification.bilan,
     exercice: exercice.exercice,
     ...(exercice.message ? { messageExercice: exercice.message } : {}),
   }

@@ -12,13 +12,18 @@ import { useRature } from '../../etat/useRature'
 
 /** Écran 7 — mode prof (RF-20) : N copies → statistique de classe + CSV. */
 export function Prof() {
-  const { analyserLot, occupe, erreur } = useRature()
+  const { analyserLot, analyserLotDemo, occupe, erreur } = useRature()
   const [fichiers, setFichiers] = useState<File[]>([])
   const [copies, setCopies] = useState<Diagnostic[]>([])
 
   const stats = statsClasse(copies)
   const types = [...CODES_ERREUR, CODE_NON_TYPEE].filter((code) => (stats.parType[code] ?? 0) > 0)
   const total = types.reduce((somme, code) => somme + (stats.parType[code] ?? 0), 0)
+
+  const demo = async () => {
+    const collectes = await analyserLotDemo()
+    setCopies((precedentes) => [...precedentes, ...collectes])
+  }
 
   const lancer = async () => {
     if (fichiers.length === 0) return
@@ -52,6 +57,12 @@ export function Prof() {
       <Bouton onClick={() => void lancer()} disabled={fichiers.length === 0 || occupe} pleineLargeur>
         {occupe ? 'Analyse en cours…' : `Analyser ${fichiers.length || ''} copie(s)`.trim()}
       </Bouton>
+
+      <div className="text-center">
+        <Bouton variante="discret" onClick={() => void demo()} disabled={occupe}>
+          Charger le lot de démonstration (réponses enregistrées, hors ligne)
+        </Bouton>
+      </div>
       {erreur ? <p role="alert" className="text-sm text-jaune">{erreur}</p> : null}
 
       {stats.nbCopies > 0 ? (
