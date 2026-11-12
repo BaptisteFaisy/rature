@@ -11,12 +11,21 @@ Le r630 était à **91 % de disque** : créer des runners neufs (≈ 5 Go chacun
 `deplace-runner.sh` (kit `repo-bootstrap`), qui réutilise le dossier
 (réenregistrement seul, `_work/` vidé, symlinks réparés).
 
-| Runner | Origine | État d'origine | Cible |
-|---|---|---|---|
-| `r630-rature-01` | `actions-runner-stable-01` | dépôt `stable` **supprimé** → enregistrement orphelin | `r630-rature-01` |
-| `r630-rature-02` | `actions-runner-stable-02` | idem | `r630-rature-02` |
-| `r630-rature-03` | `actions-runner-near_tidewater-01` | dépôt sans PR ouverte, dernier run à 14:57 | `r630-rature-03` |
-| `r630-rature-04` | `actions-runner-deja-vu-ci-01` | dépôt sans PR ouverte, dernier run à 15:25 | `r630-rature-04` |
+| Runner | Origine | État au 12/11 01 h |
+|---|---|---|
+| `r630-rature-01` | créé par la fabrique | online |
+| `r630-rature-02` | déplacé depuis `actions-runner-stable-02` (dépôt `stable` supprimé, enregistrement orphelin) | online |
+| `r630-rature-03` | créé par la fabrique | online |
+
+**Historique du 11/11** : quatre runners avaient été déplacés le soir même
+(`stable-01`, `stable-02` — dépôt supprimé —, `near_tidewater-01`,
+`deja-vu-ci-01`, tous deux sans PR ouverte). Trois dossiers ont ensuite disparu
+lors d'un ménage de disque lancé par un autre agent sur le r630 (le volume est
+passé de 91 % à 49 % d'occupation) ; leurs unités systemd restaient en boucle de
+redémarrage (`status=203/EXEC`, exécutable absent). Unités supprimées, puis
+deux runners recréés par la fabrique (`fabrique-repo.sh --sans-socle
+--workers 3`), avec un `systemctl --user restart` nécessaire pour qu'ils
+passent `online` (les runners neufs démarrent parfois « sourds »).
 
 Labels : `self-hosted`, `Linux`, `X64`, `rature-worker`, `ci-node`.
 Services : unités systemd **utilisateur** `actions-runner-rature-0N.service`
@@ -26,9 +35,13 @@ Vérifier l'état :
 
 ```bash
 gh api repos/BaptisteFaisy/rature/actions/runners \
-  --jq '[.runners[] | select(.status=="online")] | length'   # attendu : 4
-systemctl --user status actions-runner-rature-01.service
+  --jq '[.runners[] | select(.status=="online")] | length'   # attendu : 3
+export XDG_RUNTIME_DIR=/run/user/$(id -u)                    # sinon systemctl --user échoue
+systemctl --user list-units 'actions-runner-rature*' --all
 ```
+
+Un runner `offline` juste après enregistrement se soigne par
+`systemctl --user restart actions-runner-rature-0N.service` (constaté deux fois).
 
 ## 2. Ce que la CI exige (trois checks, pas un de plus)
 
