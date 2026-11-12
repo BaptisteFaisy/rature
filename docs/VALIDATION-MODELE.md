@@ -150,6 +150,26 @@ Le seul échec est le même qu'avant (copie 8, ambiguïté arrondi/unité de la 
 
 Banc : `tests/live/fusion.test.ts` (mêmes conditions : ignoré sans clé, chaîne de repli active).
 
+## Chemin fusionné + prompts bornés + banque locale (12/11, 15 h 20)
+
+Trois changements cumulés : les étapes 3 et 4 ne font **qu'un** appel vision, les prompts demandent un
+JSON compact (explications ≤ 15 mots, pas de markdown), et l'étape 6 (exercice) est servie par la
+**banque locale** — donc **zéro** appel réseau.
+
+| Copie | Attendu | Obtenu | Fautes | Latence (avant → après) |
+|---|---|---|---|---|
+| 1 signes | E01 | **E01** | 3 | ~15 s → **12,3 s** |
+| 4 développement | E02 | **E02** | 3 | ~15 s → **10,2 s** |
+| 8 grandeurs | E09 | E10 ✗ | 4 | ~30 s → **12,3 s** |
+| 3 propre | aucune | **aucune** | **0** | 6,7 s → **4,6 s** |
+
+**Une analyse complète = un seul appel modèle.** Le chemin séparé (extraction puis classification)
+mesurait 53 à 92 s par copie ; la version d'aujourd'hui est à **4,6-12,3 s**, et le total avec la
+banque d'exercices est identique (l'exercice ne coûte plus d'appel). La cible RNF-01 (< 20 s) est
+tenue, y compris en journée.
+
+Le seul échec reste la copie 8 (E09 attendu, E10 rendu) : ambiguïté de la fixture, déjà documentée.
+
 ## Ce qui reste à valider
 
 - [ ] 5 **vraies** copies corrigées photographiées + 2 copies propres : même

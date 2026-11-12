@@ -88,7 +88,7 @@ export async function revoirFautesPeuSures(
     user: messageRevue(erreurs, indices),
     json: true,
     temperature: 0,
-    maxTokens: 900,
+    maxTokens: 600,
   })
   const { erreurs: revues, modifiees } = appliquerRevue(erreurs, indices, parserRevue(texte))
   return { erreurs: revues, revues: indices.length, modifiees }

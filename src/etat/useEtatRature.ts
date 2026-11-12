@@ -8,7 +8,7 @@ import { MODELE_PAR_DEFAUT, PROXY_PAR_DEFAUT } from '../domain/config'
 import { profilVide } from '../domain/profil'
 import type { Diagnostic, Profil, Progression, Reglages, ResultatAnalyse } from '../domain/types'
 import type { Transport } from '../pipeline/llm'
-import { sonderProxy } from '../pipeline/sante'
+import { sonderModeles, sonderProxy } from '../pipeline/sante'
 import type { SanteProxy } from '../pipeline/sante'
 import { REGLAGES_VIDES, chargerDiagnostics, chargerProfil, chargerReglages } from '../storage/local'
 
@@ -48,6 +48,16 @@ export type Etat = {
   demoId: string | null
   /** Santé du proxy : ok / ko (repli démo proposé) / inconnue. */
   santeProxy: SanteProxy
+  /** Chaîne de modèles réordonnée d'après le disjoncteur du proxy (idée 5). */
+  chaineModeles: string[] | null
+  /** Modèle qui a réellement répondu au dernier appel, pour l'afficher. */
+  modeleRepondu: string | null
+  /** Analyse terminée pendant que l'utilisateur naviguait ailleurs (idée 8). */
+  diagnosticPret: boolean
+  /** Dernière progression publiée par le proxy (streaming, idée 7). */
+  messageProgres: string | null
+  /** Identifiants des exercices déjà servis (pour en proposer un autre). */
+  exercicesVus: string[]
 }
 
 export function ecranDepuisUrl(): Ecran {
@@ -67,15 +77,36 @@ export function etatInitial(): Etat {
     occupe: false,
     demoId: null,
     santeProxy: 'inconnue',
+    chaineModeles: null,
+    modeleRepondu: null,
+    diagnosticPret: false,
+    messageProgres: null,
+    exercicesVus: [],
   }
 }
 
 /** Transport effectif : proxy edge, ou clé personnelle si elle est fournie. */
-export function transportDe(reglages: Reglages): Transport {
+/**
+ * Transport effectif. `surModele` remplit l'état pour que l'UI puisse dire quel
+ * modèle a réellement répondu (transparence sur un amont qui change tout le temps).
+ */
+export function transportDe(
+  reglages: Reglages,
+  options: {
+    chaine?: string[] | null
+    surModele?: (modele: string, tentatives: number) => void
+    surProgres?: (message: string) => void
+  } = {},
+): Transport {
   return {
     proxy: reglages.proxy.trim() || PROXY_PAR_DEFAUT,
     modele: reglages.modele.trim() || MODELE_PAR_DEFAUT,
+    // Streaming : le proxy publie sa progression pendant que l'amont réfléchit.
+    stream: true,
     ...(reglages.clePersonnelle.trim() ? { cle: reglages.clePersonnelle.trim() } : {}),
+    ...(options.chaine ? { chaine: options.chaine } : {}),
+    ...(options.surModele ? { surModele: options.surModele } : {}),
+    ...(options.surProgres ? { surProgres: options.surProgres } : {}),
   }
 }
 
@@ -115,13 +146,22 @@ export function useEtatRature() {
   // tant que l'utilisateur n'a rien saisi.
   const proxyActif = transportDe(etat.reglages).proxy
   useEffect(() => {
-    void sonderProxy(proxyActif).then((santeProxy) => {
-      setEtat((precedent) => ({ ...precedent, santeProxy }))
-    })
+    void (async () => {
+      const [santeProxy, chaineModeles] = await Promise.all([
+        sonderProxy(proxyActif),
+        sonderModeles(proxyActif),
+      ])
+      setEtat((precedent) => ({ ...precedent, santeProxy, chaineModeles }))
+    })()
   }, [proxyActif])
 
   const aller = useCallback((ecran: Ecran) => {
-    setEtat((precedent) => ({ ...precedent, ecran }))
+    setEtat((precedent) => ({
+      ...precedent,
+      ecran,
+      // Le badge « diagnostic prêt » s'éteint dès qu'on va le voir.
+      diagnosticPret: ecran === 'diagnostic' ? false : precedent.diagnosticPret,
+    }))
     const url = new URL(window.location.href)
     url.searchParams.set('ecran', ecran)
     window.history.replaceState({}, '', url)

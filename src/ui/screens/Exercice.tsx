@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { origineExercice } from '../../domain/banque'
 import { libelleDe } from '../../domain/taxonomy'
 import { Bouton } from '../components/Bouton'
 import { Carte } from '../components/Carte'
@@ -74,6 +75,8 @@ export function Exercice() {
         </Carte>
       ) : null}
 
+      <p className="text-xs text-muet">{origineExercice(exercice)}</p>
+
       <Carte>
         <p className="text-xs text-muet">
           Garde-fou : cet exercice a été vérifié sur trois points — il travaille bien
@@ -82,9 +85,16 @@ export function Exercice() {
         </p>
       </Carte>
 
-      <Bouton onClick={() => void nouvelExercice()} disabled={occupe} pleineLargeur>
-        {occupe ? 'Préparation…' : 'Un autre exercice'}
-      </Bouton>
+      <div className="space-y-2">
+        <Bouton onClick={() => void nouvelExercice()} disabled={occupe} pleineLargeur>
+          {occupe ? 'Préparation…' : 'Un autre exercice (banque locale, instantané)'}
+        </Bouton>
+        <div className="text-center">
+          <Bouton variante="discret" onClick={() => void nouvelExercice({ inedit: true })} disabled={occupe}>
+            Exercice inédit, généré par le modèle (lent)
+          </Bouton>
+        </div>
+      </div>
     </div>
   )
 }

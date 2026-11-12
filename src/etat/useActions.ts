@@ -8,25 +8,37 @@ import { useCallback } from 'react'
 import type { Diagnostic, ResultatAnalyse } from '../domain/types'
 import { clientDemoPour, fichierDemoPour } from '../pipeline/demo'
 import { ID_COPIES_DEMO } from '../pipeline/demo'
-import { genererExerciceVerifie } from '../pipeline/exercise'
+import { obtenirExercice } from '../pipeline/exercise'
 import { analyserCopie } from '../pipeline/orchestrate'
+import type { Transport } from '../pipeline/llm'
 import { enregistrerDiagnostic, effacerHistorique, sauverReglages } from '../storage/local'
 import type { Etat, Modificateur } from './useEtatRature'
 import type { Ecran } from './useEtatRature'
 import { amontMort, fusionner, messageErreur, transportDe } from './useEtatRature'
 import type { Reglages } from '../domain/types'
 
+export type { Reglages }
+
 type Ctx = { etat: Etat; setEtat: Dispatch<SetStateAction<Etat>>; aller: (ecran: Ecran) => void }
+
+/** Transport commun à tous les appels : chaîne optimisée + modèle répondu. */
+function transportPour({ etat, setEtat }: Ctx) {
+  return transportDe(etat.reglages, {
+    chaine: etat.chaineModeles,
+    surModele: (modele) => setEtat((precedent) => ({ ...precedent, modeleRepondu: modele })),
+    surProgres: (message) => setEtat((precedent) => ({ ...precedent, messageProgres: message })),
+  })
+}
 
 /** Une analyse, avec publication de la progression. Rend null si échec. */
 async function executerAnalyse(
   fichier: File,
-  options: { reglages: Reglages; demoId?: string; setEtat: Ctx['setEtat'] },
+  options: { transport: Transport; demoId?: string; setEtat: Ctx['setEtat'] },
 ): Promise<ResultatAnalyse | null> {
-  const { reglages, demoId, setEtat } = options
+  const { demoId, setEtat } = options
   try {
     return await analyserCopie(fichier, {
-      transport: transportDe(reglages),
+      transport: options.transport,
       ...(demoId ? { client: clientDemoPour(demoId) } : {}),
       onProgression: (p) => setEtat((precedent) => ({ ...precedent, progression: fusionner(precedent.progression, p) })),
     })
@@ -41,6 +53,11 @@ async function executerAnalyse(
 }
 
 /** Affiche le diagnostic dès la fin de l'étape 5, puis persiste en arrière-plan. */
+/**
+ * Affiche le diagnostic dès la fin de l'étape 5 — sauf si l'utilisateur a
+ * quitté l'écran Analyse (mode asynchrone, idée 8) : dans ce cas on ne le
+ * rapatrie pas de force, on allume un badge « diagnostic prêt ».
+ */
 function publierPartiel(
   setEtat: Ctx['setEtat'],
   partiel: ResultatAnalyse,
@@ -51,7 +68,8 @@ function publierPartiel(
     occupe: false,
     resultat: partiel,
     demoId,
-    ecran: 'diagnostic',
+    ecran: precedent.ecran === 'analyse' ? 'diagnostic' : precedent.ecran,
+    diagnosticPret: precedent.ecran !== 'analyse' && precedent.ecran !== 'diagnostic',
   }))
   void enregistrerDiagnostic(partiel.diagnostic).then((profil) => {
     setEtat((precedent) => ({
@@ -75,7 +93,7 @@ export function useActionsRature({ etat, setEtat, aller }: Ctx) {
       }))
       const demoId = options.demoId ?? null
       const resultat = await analyserCopie(fichier, {
-        transport: transportDe(etat.reglages),
+        transport: transportPour({ etat, setEtat, aller }),
         ...(demoId ? { client: clientDemoPour(demoId) } : {}),
         onProgression: (p) =>
           setEtat((precedent) => ({ ...precedent, progression: fusionner(precedent.progression, p) })),
@@ -119,7 +137,7 @@ export function useActionsRature({ etat, setEtat, aller }: Ctx) {
       setEtat((precedent) => ({ ...precedent, occupe: true, erreur: null, progression: [] }))
       for (const [index, fichier] of fichiers.entries()) {
         const resultat = await executerAnalyse(fichier, {
-          reglages: etat.reglages,
+          transport: transportPour({ etat, setEtat, aller }),
           ...(demoIds?.[index] ? { demoId: demoIds[index] } : {}),
           setEtat,
         })
@@ -160,35 +178,48 @@ export function useActionsRature({ etat, setEtat, aller }: Ctx) {
     setEtat((precedent) => ({ ...precedent, erreur: null }))
   }, [setEtat])
 
-  /** Un autre exercice — en démo, il reste en démo (jamais d'appel réseau). */
-  const nouvelExercice = useCallback(async () => {
-    const resultat = etat.resultat
-    const type = resultat?.diagnostic.typeDominant
-    if (!resultat || !type) return
-    setEtat((precedent) => ({ ...precedent, occupe: true }))
-    try {
-      const extrait = resultat.extraction.annotations.map((a) => a.ligne).slice(0, 6).join('\n')
-      const exercice = await genererExerciceVerifie({
-        typeDominant: type,
-        extraitCopie: extrait,
-        transport: transportDe(etat.reglages),
-        ...(etat.demoId ? { client: clientDemoPour(etat.demoId) } : {}),
-      })
-      setEtat((precedent) => ({
-        ...precedent,
-        occupe: false,
-        resultat: precedent.resultat
-          ? {
-              ...precedent.resultat,
-              exercice: exercice.exercice,
-              ...(exercice.message ? { messageExercice: exercice.message } : {}),
-            }
-          : precedent.resultat,
-      }))
-    } catch (erreur) {
-      setEtat((precedent) => ({ ...precedent, occupe: false, erreur: messageErreur(erreur) }))
-    }
-  }, [etat.resultat, etat.reglages, etat.demoId, setEtat])
+  /**
+   * Un autre exercice. Par défaut : **banque locale**, donc aucun appel réseau
+   * (idée 1). `inedit: true` demande au modèle un exercice inédit — deux
+   * appels, donc 30 à 110 s sur l'amont : c'est un choix, pas un défaut.
+   */
+  const nouvelExercice = useCallback(
+    async (options: { inedit?: boolean } = {}) => {
+      const resultat = etat.resultat
+      const type = resultat?.diagnostic.typeDominant
+      if (!resultat || !type) return
+      setEtat((precedent) => ({ ...precedent, occupe: true }))
+      try {
+        const extrait = resultat.extraction.annotations.map((a) => a.ligne).slice(0, 6).join('\n')
+        const obtenu = await obtenirExercice({
+          typeDominant: type,
+          extraitCopie: extrait,
+          transport: transportPour({ etat, setEtat, aller }),
+          inedit: options.inedit ?? false,
+          dejaVus: etat.exercicesVus,
+          graine: Date.now() % 1000,
+          ...(etat.demoId ? { client: clientDemoPour(etat.demoId) } : {}),
+        })
+        setEtat((precedent) => ({
+          ...precedent,
+          occupe: false,
+          exercicesVus: obtenu.exercice?.exercice.id
+            ? [...precedent.exercicesVus, obtenu.exercice.exercice.id]
+            : precedent.exercicesVus,
+          resultat: precedent.resultat
+            ? {
+                ...precedent.resultat,
+                exercice: obtenu.exercice,
+                ...(obtenu.message ? { messageExercice: obtenu.message } : {}),
+              }
+            : precedent.resultat,
+        }))
+      } catch (erreur) {
+        setEtat((precedent) => ({ ...precedent, occupe: false, erreur: messageErreur(erreur) }))
+      }
+    },
+    [etat.resultat, etat.reglages, etat.demoId, etat.exercicesVus, setEtat, aller],
+  )
 
   return {
     analyser,

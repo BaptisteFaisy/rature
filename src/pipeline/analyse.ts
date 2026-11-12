@@ -70,7 +70,7 @@ export async function analyserImage(
     image: dataUrl,
     json: true,
     temperature: 0.1,
-    maxTokens: 2500,
+    maxTokens: 1600,
   })
   return decouperAnalyse(parserAnalyse(texte))
 }

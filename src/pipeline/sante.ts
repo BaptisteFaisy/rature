@@ -56,6 +56,37 @@ async function sonderUneFois(proxy: string): Promise<SanteProxy> {
   }
 }
 
+export type EtatModeles = { chaine: string[]; disjoncteur: Record<string, number> }
+
+/**
+ * Sonde la disponibilité des modèles (idée 5) : le proxy tient un disjoncteur
+ * par modèle (cooldown après un 402/503). On réordonne la chaîne pour commencer
+ * par un modèle vivant — chaque modèle mort évité, c'est 1 à 2 s de gagnées.
+ * Aucun appel modèle : on lit l'état du proxy, donc c'est gratuit.
+ */
+export async function sonderModeles(proxy = PROXY_PAR_DEFAUT): Promise<string[] | null> {
+  if (!estSondable(proxy)) return null
+  try {
+    const reponse = await fetch(urlSante(proxy).replace(/\/health$/, '/modeles'), {
+      signal: AbortSignal.timeout(DELAI_SONDE_MS),
+    })
+    if (!reponse.ok) return null
+    const etat = (await reponse.json()) as EtatModeles
+    return reordonner(etat)
+  } catch {
+    return null
+  }
+}
+
+/** Modèles vivants d'abord (dans l'ordre de la chaîne), modèles en cooldown ensuite. */
+export function reordonner(etat: EtatModeles): string[] | null {
+  if (!Array.isArray(etat?.chaine) || etat.chaine.length === 0) return null
+  const morts = etat.disjoncteur && typeof etat.disjoncteur === 'object' ? etat.disjoncteur : {}
+  const vivants = etat.chaine.filter((modele) => !(modele in morts))
+  const refroidis = etat.chaine.filter((modele) => modele in morts)
+  return [...vivants, ...refroidis]
+}
+
 export async function sonderProxy(proxy = PROXY_PAR_DEFAUT): Promise<SanteProxy> {
   if (!estSondable(proxy)) return 'inconnue'
   for (let essai = 1; essai <= TENTATIVES; essai += 1) {

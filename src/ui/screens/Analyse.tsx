@@ -1,4 +1,5 @@
 import { BUDGET_PIPELINE_MS } from '../../domain/config'
+import { Bouton } from '../components/Bouton'
 import { EtapesPipeline } from '../components/EtapesPipeline'
 import { Carte } from '../components/Carte'
 import { useRature } from '../../etat/useRature'
@@ -9,7 +10,7 @@ import { useRature } from '../../etat/useRature'
  * Presentation), et le budget annoncé est celui du cahier des charges.
  */
 export function Analyse() {
-  const { progression, erreur, occupe } = useRature()
+  const { progression, erreur, occupe, aller, messageProgres, modeleRepondu } = useRature()
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold">Analyse en cours</h1>
@@ -21,6 +22,22 @@ export function Analyse() {
       <Carte>
         <EtapesPipeline progression={progression} />
       </Carte>
+
+      <div className="text-center">
+        <Bouton variante="discret" onClick={() => aller('accueil')}>
+          Continuer sans attendre — un badge me préviendra quand ce sera prêt
+        </Bouton>
+      </div>
+
+      {messageProgres ? (
+        <p className="rounded-lg border border-bord bg-surface-2 px-3 py-2 font-mono text-xs text-muet">
+          {messageProgres}
+        </p>
+      ) : null}
+
+      {modeleRepondu ? (
+        <p className="text-xs text-muet">Répondu par {modeleRepondu.split('/').pop()}</p>
+      ) : null}
 
       {erreur ? <p role="alert" className="text-sm text-jaune">{erreur}</p> : null}
       {!occupe && !erreur ? <p className="text-sm text-muet">Chargement du résultat…</p> : null}

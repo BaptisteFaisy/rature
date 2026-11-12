@@ -31,6 +31,14 @@ export type Transport = {
   proxy: string
   cle?: string
   modele?: string
+  /** true = le proxy répond en SSE et publie sa progression (idée 7). */
+  stream?: boolean
+  /** Prévenu à chaque étape du proxy : « modèle 2/6 essayé, 503 ». */
+  surProgres?: (message: string) => void
+  /** Prévenu quand un modèle a réellement répondu (transparence à l'écran). */
+  surModele?: (modele: string, tentatives: number) => void
+  /** Chaîne réordonnée par la sonde de disponibilité (idée 5). */
+  chaine?: string[]
 }
 
 export type ReponseProxy = {
@@ -38,17 +46,25 @@ export type ReponseProxy = {
   erreur?: string
   /** `proxy` = quota du proxy partagé (le BYOK est le seul recours). */
   quota?: string
+  /** Modèle qui a réellement répondu (le proxy descend sa propre chaîne). */
+  modele?: string
+  tentatives?: number
+  /** Le proxy a déjà épuisé sa chaîne : inutile de rejouer la nôtre. */
+  chaineEpuisee?: boolean
 }
 
 export class ErreurLLM extends Error {
   readonly statut: number
   /** true quand c'est le quota du proxy partagé : le seul recours est le BYOK. */
   readonly quotaProxy: boolean
-  constructor(message: string, statut = 0, quotaProxy = false) {
+  /** true quand le proxy a déjà descendu toute sa chaîne : on ne rejoue pas la nôtre. */
+  readonly chaineEpuisee: boolean
+  constructor(message: string, statut = 0, options: { quotaProxy?: boolean; chaineEpuisee?: boolean } = {}) {
     super(message)
     this.name = 'ErreurLLM'
     this.statut = statut
-    this.quotaProxy = quotaProxy
+    this.quotaProxy = options.quotaProxy ?? false
+    this.chaineEpuisee = options.chaineEpuisee ?? false
   }
 }
 
@@ -86,10 +102,14 @@ export function construireCorps(requete: RequeteLLM, modele: string): Record<str
   return corps
 }
 
-/** Chaîne essayée : le modèle demandé d'abord, puis les replis connus. */
+/**
+ * Chaîne essayée : le modèle demandé d'abord, puis les replis. Si une sonde de
+ * disponibilité a réordonné la chaîne (`transport.chaine`), c'est elle qui prime.
+ */
 export function chaineModeles(transport: Transport): string[] {
   const premier = transport.modele?.trim() || MODELE_PAR_DEFAUT
-  return [premier, ...CHAINE_MODELES.filter((modele) => modele !== premier)]
+  const suite = transport.chaine?.length ? transport.chaine : CHAINE_MODELES
+  return [premier, ...suite.filter((modele) => modele !== premier)]
 }
 
 /**
@@ -103,8 +123,116 @@ function attendre(ms: number): Promise<void> {
   return new Promise((resoudre) => setTimeout(resoudre, ms))
 }
 
+/** Un événement SSE : `event: nom` + `data: {…}`. */
+type EvenementFlux = { nom: string; donnees: Record<string, unknown> }
+
+function parserEvenement(brut: string): EvenementFlux | null {
+  let nom = 'message'
+  let donnees = ''
+  for (const ligne of brut.split('\n')) {
+    if (ligne.startsWith('event:')) nom = ligne.slice(6).trim()
+    else if (ligne.startsWith('data:')) donnees += ligne.slice(5).trim()
+  }
+  if (!donnees) return null
+  try {
+    return { nom, donnees: JSON.parse(donnees) as Record<string, unknown> }
+  } catch {
+    return null
+  }
+}
+
+/** Message lisible pour l'écran d'analyse : on dit ce que le proxy essaie. */
+export function messageProgres(donnees: Record<string, unknown>): string {
+  const modele = typeof donnees.modele === 'string' ? donnees.modele.split('/').pop() : 'modèle'
+  const essai = typeof donnees.essai === 'number' ? donnees.essai : 0
+  const statut = donnees.statut ?? '?'
+  return `${modele} indisponible (${statut}) — essai ${essai}, modèle suivant…`
+}
+
+/**
+ * Appel en flux (SSE) : le proxy publie chaque tentative pendant que l'amont
+ * réfléchit. Sans ça, l'élève regarde un spinner pendant 30 à 60 s ; avec, il
+ * voit la chaîne de repli travailler — l'attente devient une démonstration.
+ */
+async function appelerEnFlux(transport: Transport, requete: RequeteLLM, modele: string): Promise<string> {
+  const entetes: Record<string, string> = { 'content-type': 'application/json' }
+  if (transport.cle) entetes['x-rature-cle'] = transport.cle
+
+  let reponse: Response
+  try {
+    reponse = await fetch(transport.proxy, {
+      method: 'POST',
+      headers: entetes,
+      body: JSON.stringify({ ...construireCorps(requete, modele), stream: true }),
+      signal: AbortSignal.timeout(DELAI_APPEL_MS),
+    })
+  } catch (erreur) {
+    if (erreur instanceof Error && erreur.name === 'TimeoutError') {
+      throw new ErreurLLM('Le modèle met trop de temps à répondre.', 504)
+    }
+    throw new ErreurLLM('Réseau indisponible. Vérifie ta connexion puis réessaie.', 0)
+  }
+  if (!reponse.ok) throw await erreurDepuisReponse(reponse)
+
+  const type = reponse.headers.get('content-type') ?? ''
+  // Un proxy qui ne parle pas SSE : on retombe sur le chemin JSON classique.
+  if (!type.includes('text/event-stream') || !reponse.body) return lireCorpsJson(reponse, transport)
+  return lireFlux(reponse, transport)
+}
+
+async function lireFlux(reponse: Response, transport: Transport): Promise<string> {
+  const lecteur = reponse.body!.getReader()
+  const decodeur = new TextDecoder()
+  let tampon = ''
+  let texte = ''
+  for (;;) {
+    const { done, value } = await lecteur.read()
+    if (done) break
+    tampon += decodeur.decode(value, { stream: true })
+    let separateur = tampon.indexOf('\n\n')
+    while (separateur >= 0) {
+      const evenement = parserEvenement(tampon.slice(0, separateur))
+      tampon = tampon.slice(separateur + 2)
+      separateur = tampon.indexOf('\n\n')
+      if (!evenement) continue
+      if (evenement.nom === 'progres') {
+        transport.surProgres?.(messageProgres(evenement.donnees))
+      } else if (evenement.nom === 'resultat') {
+        texte = String(evenement.donnees.texte ?? '')
+        if (typeof evenement.donnees.modele === 'string') {
+          transport.surModele?.(evenement.donnees.modele, Number(evenement.donnees.tentatives ?? 1))
+        }
+      } else if (evenement.nom === 'erreur') {
+        throw new ErreurLLM(
+          String(evenement.donnees.erreur ?? 'Amont indisponible.'),
+          Number(evenement.donnees.statut ?? 503),
+          { chaineEpuisee: true },
+        )
+      }
+    }
+  }
+  if (!texte.trim()) throw new ErreurLLM('Réponse vide du modèle.', 502)
+  return texte
+}
+
+async function lireCorpsJson(reponse: Response, transport: Transport): Promise<string> {
+  let data: ReponseProxy
+  try {
+    data = (await reponse.json()) as ReponseProxy
+  } catch {
+    throw new ErreurLLM('Réponse du proxy illisible (JSON attendu).', 502)
+  }
+  const texte = typeof data.texte === 'string' ? data.texte : ''
+  if (texte.trim().length === 0) throw new ErreurLLM('Réponse vide du modèle.', 502)
+  if (typeof data.modele === 'string' && data.modele) {
+    transport.surModele?.(data.modele, data.tentatives ?? 1)
+  }
+  return texte
+}
+
 /** Un appel, un modèle, un texte. Toute erreur devient ErreurLLM + statut. */
 async function appeler(transport: Transport, requete: RequeteLLM, modele: string): Promise<string> {
+  if (transport.stream) return appelerEnFlux(transport, requete, modele)
   const entetes: Record<string, string> = { 'content-type': 'application/json' }
   if (transport.cle) entetes['x-rature-cle'] = transport.cle
 
@@ -129,15 +257,7 @@ async function appeler(transport: Transport, requete: RequeteLLM, modele: string
 
   // Un corps non-JSON (page d'erreur d'un hébergeur, proxy qui rend du HTML)
   // ne doit pas fuir en SyntaxError : on traduit en ErreurLLM exploitable.
-  let data: ReponseProxy
-  try {
-    data = (await reponse.json()) as ReponseProxy
-  } catch {
-    throw new ErreurLLM('Réponse du proxy illisible (JSON attendu).', 502)
-  }
-  const texte = typeof data.texte === 'string' ? data.texte : ''
-  if (texte.trim().length === 0) throw new ErreurLLM('Réponse vide du modèle.', 502)
-  return texte
+  return lireCorpsJson(reponse, transport)
 }
 
 /** Le proxy renvoie `{erreur, quota?}` : on affiche son message, pas un générique. */
@@ -148,20 +268,21 @@ async function erreurDepuisReponse(reponse: Response): Promise<ErreurLLM> {
   } catch {
     data = {}
   }
+  const chaineEpuisee = data.chaineEpuisee === true
   if (reponse.status === 429) {
     // Quota du proxy partagé : la clé de l'utilisateur est le seul recours.
     if (data.quota === 'proxy') {
       return new ErreurLLM(
         `${data.erreur || 'Quota du proxy atteint.'} Colle ta propre clé dans Réglages, ou réessaie plus tard.`,
         429,
-        true,
+        { quotaProxy: true },
       )
     }
     // Limite de débit du fournisseur : transitoire, on réessaie après une pause.
     return new ErreurLLM(data.erreur || 'Limite de débit du fournisseur de modèles.', 429)
   }
   const message = data.erreur || `Analyse refusée (HTTP ${reponse.status}).`
-  return new ErreurLLM(message, reponse.status)
+  return new ErreurLLM(message, reponse.status, { chaineEpuisee })
 }
 
 /** Un 429 « fournisseur » mérite une seconde chance après une courte pause. */
@@ -199,7 +320,9 @@ export async function completer(transport: Transport, requete: RequeteLLM): Prom
       return await appelerAvecPause(transport, requete, modele)
     } catch (erreur) {
       if (!(erreur instanceof ErreurLLM)) throw erreur
-      if (erreur.quotaProxy || !REESSAYABLES.has(erreur.statut)) throw erreur
+      // Le proxy a déjà descendu toute sa chaîne : rejouer la nôtre ne ferait
+      // que multiplier les allers-retours pour le même résultat.
+      if (erreur.quotaProxy || erreur.chaineEpuisee || !REESSAYABLES.has(erreur.statut)) throw erreur
       derniere = erreur
     }
   }
