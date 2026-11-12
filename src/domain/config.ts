@@ -92,6 +92,10 @@ export const CHAINE_MODELES = [
   'ag/gemini-4-argon',
   'ag/claude-sonnet-5-5',
   'ag/gemini-3.8-flash-high',
+  // zai/glm-4.6v : vision pas chère (0,0003 USDC/Mtok), famille « Z.AI GLM Coding
+  // Plan » autorisée par le compte InferHub (les familles ali/ oai/ cb/ cc/ sont
+  // filtrées par « Models & pricing » — voir docs/INFERHUB.md).
+  'zai/glm-4.6v',
   'ag/claude-opus-4-6-thinking',
 ]
 

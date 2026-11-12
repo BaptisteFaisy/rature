@@ -52,6 +52,7 @@ CHAINE = [
     "ag/gemini-4-argon",
     "ag/claude-sonnet-5-5",
     "ag/gemini-3.8-flash-high",
+    "zai/glm-4.6v",
     "ag/claude-opus-4-6-thinking",
 ]
 # 402 (hors enchère) et 503 (sans capacité) sont transitoires mais coûtent cher :
