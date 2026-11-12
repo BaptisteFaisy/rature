@@ -1,0 +1,18 @@
+{
+  "source": "corpus/demo/copie-demo-1.jpg",
+  "modele": "ag/gemini-4-carbon",
+  "enregistreLe": "2026-11-12T19:40:09.777Z",
+  "dominant": "E01",
+  "nbFautes": 3,
+  "revues": 0,
+  "durees": {
+    "extrait": 11098,
+    "classifie": 0,
+    "genere": 7579
+  },
+  "reponses": {
+    "analyse": "{\"annotations\":[{\"ligne\":\"A = -6x - 10\",\"annotation\":\"A = -6x + 10 / signe !\",\"code\":\"E01\",\"confiance\":0.95,\"explication\":\"Le signe change entre les deux lignes : -2 × -5 vaut +10.\",\"eleve\":\"-6x - 10\",\"attendu\":\"-6x + 10\",\"zone\":{\"x\":0.55,\"y\":0.24,\"largeur\":0.38,\"hauteur\":0.08}},{\"ligne\":\"B = 4x - 4 - 3x + 6\",\"annotation\":\"B = 4x - 4 - 3x - 6 / -3x +2 ?\",\"code\":\"E01\",\"confiance\":0.92,\"explication\":\"Le signe du terme +6 change : -3(+2) donne -6, pas +6.\",\"eleve\":\"4x - 4 - 3x + 6\",\"attendu\":\"4x - 4 - 3x - 6\",\"zone\":{\"x\":0.55,\"y\":0.43,\"largeur\":0.38,\"hauteur\":0.08}},{\"ligne\":\"C = 2x + 3 + 4\",\"annotation\":\"Recopie : l'énoncé donnait 2x + 7.\",\"code\":\"E11\",\"confiance\":0.93,\"explication\":\"L'énoncé 2x + 7 est mal recopié en 2x + 3 + 4.\",\"eleve\":\"2x + 3 + 4\",\"zone\":{\"x\":0.1,\"y\":0.52,\"largeur\":0.55,\"hauteur\":0.06}}],\"copiePropre\":false}",
+    "exercice": "{\"enonce\":\"Développe et réduis : -3(2x - 4) + 5(x - 2)\",\"indices\":[\"Multiplie soigneusement chaque terme par le facteur devant la parenthèse, en tenant compte du signe.\"],\"solution\":\"-3(2x-4) = -6x + 12 ; 5(x-2) = 5x - 10 ; total -x + 2. Point clé : -3 × (-4) = +12, le signe moins fois moins donne plus.\",\"niveau\":\"seconde\"}",
+    "verdict": "{\"travailleLeBonType\":true,\"neDonneLaSolutionOrigine\":true,\"memeNiveau\":true,\"motifs\":[]}"
+  }
+}

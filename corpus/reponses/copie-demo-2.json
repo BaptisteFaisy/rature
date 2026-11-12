@@ -1,0 +1,18 @@
+{
+  "source": "corpus/demo/copie-demo-2.jpg",
+  "modele": "ag/gemini-4-carbon",
+  "enregistreLe": "2026-11-12T19:43:37.176Z",
+  "dominant": "E01",
+  "nbFautes": 3,
+  "revues": 0,
+  "durees": {
+    "extrait": 9013,
+    "classifie": 0,
+    "genere": 198384
+  },
+  "reponses": {
+    "analyse": "{\"annotations\":[{\"ligne\":\"D = 5 - 6x - 3\",\"annotation\":\"correction : D = 5 - 6x + 3 / signe\",\"code\":\"E01\",\"confiance\":0.92,\"explication\":\"Le signe de -3×(-1) devient -3 au lieu de +3.\",\"eleve\":\"D = 5 - 6x - 3\",\"attendu\":\"D = 5 - 6x + 3\",\"zone\":{\"x\":0.5,\"y\":0.27,\"largeur\":0.4,\"hauteur\":0.06}},{\"ligne\":\"E = 12x + 2\",\"annotation\":\"correction : E = 12x + 8 / le 4 sur le 2 ?\",\"code\":\"E02\",\"confiance\":0.93,\"explication\":\"Le facteur 4 n'est pas distribué sur le terme 2.\",\"eleve\":\"E = 12x + 2\",\"attendu\":\"E = 12x + 8\",\"zone\":{\"x\":0.5,\"y\":0.44,\"largeur\":0.4,\"hauteur\":0.06}},{\"ligne\":\"F = 7x - 2x - 3\",\"annotation\":\"correction : F = 7x - 2x + 6 / signe\",\"code\":\"E01\",\"confiance\":0.92,\"explication\":\"Le signe de -2×(-3) devient -3 au lieu de +6.\",\"eleve\":\"F = 7x - 2x - 3\",\"attendu\":\"F = 7x - 2x + 6\",\"zone\":{\"x\":0.5,\"y\":0.6,\"largeur\":0.4,\"hauteur\":0.06}}],\"copiePropre\":false}",
+    "exercice": "{\"enonce\":\"Développe et réduis l'expression : A = 4 - 3(2x - 5)\",\"indices\":[\"Distribue le facteur -3 avec son signe sur chaque terme dans la parenthèse.\"],\"solution\":\"On distribue -3 : A = 4 - 3×(2x) - 3×(-5) = 4 - 6x + 15 = -6x + 19. Le point clé : multiplier un nombre négatif (-3) par un autre (-5) donne un résultat positif (+15).\",\"niveau\":\"seconde\"}",
+    "verdict": "{\"travailleLeBonType\":true,\"neDonneLaSolutionOrigine\":true,\"memeNiveau\":true,\"motifs\":[]}"
+  }
+}

@@ -25,7 +25,7 @@ import pathlib
 import random
 import shutil
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 BLEU_ELEVE = (27, 58, 107)
 ROUGE_PROF = (198, 40, 40)
@@ -206,11 +206,6 @@ COPIES = [
     },
 ]
 
-# Copies retenues pour la démonstration hors ligne : leurs images sont copiées
-# dans `corpus/demo/` pour que le build n'embarque QUE celles-là (le corpus
-# complet pèse 1,5 Mo, dont les versions dégradées à 400 Ko).
-DEMO_IDS = ["copie-1-signes", "copie-4-developpement", "copie-6-puissances"]
-
 DEGRADATIONS = {
     "copie-1-signes-photo": ("copie-1-signes", {"rotation": -2.5, "lumiere": 70, "bruit": 1.6, "flou": 0.5, "contraste": 0.85}),
     "copie-6-puissances-photo": ("copie-6-puissances", {"rotation": 3.0, "lumiere": 90, "bruit": 2.4, "flou": 0.7, "contraste": 0.8}),
@@ -222,7 +217,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sortie", default="corpus/images")
     ap.add_argument("--police", default="/tmp/Caveat.ttf")
+    ap.add_argument("--demo", action="store_true", help="génère les photos de la démo (corpus/demo)")
+    ap.add_argument("--source-demo", default="corpus/copies-demo.json")
     args = ap.parse_args()
+
+    if args.demo:
+        generer_demo(source=args.source_demo, sortie="corpus/demo")
+        return
 
     sortie = pathlib.Path(args.sortie)
     sortie.mkdir(parents=True, exist_ok=True)
@@ -241,13 +242,192 @@ def main():
         manifeste.append({"fichier": f"{nom}.png", "dominant": par_id[source]["dominant"], "degradee": True})
 
     (sortie / "manifeste.json").write_text(json.dumps({"copies": manifeste}, indent=2) + "\n")
-
-    demo = sortie.parent / "demo"
-    demo.mkdir(parents=True, exist_ok=True)
-    for identifiant in DEMO_IDS:
-        shutil.copyfile(sortie / ("%s.png" % identifiant), demo / ("%s.png" % identifiant))
     for entree in manifeste:
         print("%-34s dominant=%-5s dégradée=%s" % (entree["fichier"], entree["dominant"], entree["degradee"]))
+
+
+
+
+# ---------------------------------------------------------------------------
+# Démo : copies d'un même élève, rendues puis « photographiées »
+# ---------------------------------------------------------------------------
+
+POLICE_MANUSCRITE = "/tmp/Caveat.ttf"
+POLICE_IMPRIME = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+
+def _police_manuscrite(taille):
+    """Police d'écriture manuscrite ; repli sur DejaVu si le fichier manque."""
+    try:
+        return ImageFont.truetype(POLICE_MANUSCRITE, taille)
+    except OSError:
+        return ImageFont.truetype(POLICE_IMPRIME, taille)
+
+
+def _rendre_copie(copie, dossier_sortie):
+    """Une page de cahier : énoncé imprimé, élève au bleu, prof au rouge."""
+    largeur, hauteur = 1240, 1754
+    page = Image.new("RGB", (largeur, hauteur), (250, 248, 242))
+    dessin = ImageDraw.Draw(page)
+    imprime = ImageFont.truetype(POLICE_IMPRIME, 24)
+    manuscrit = _police_manuscrite(38)
+    petit = _police_manuscrite(30)
+
+    # lignes de cahier très légèrement visibles (comme du vrai papier, pas un formulaire)
+    for y in range(150, hauteur - 60, 74):
+        dessin.line([(90, y), (largeur - 70, y)], fill=(237, 241, 245), width=2)
+    dessin.line([(150, 110), (150, hauteur - 60)], fill=(238, 206, 206), width=2)
+
+    y = 150
+    dessin.text((180, 60), copie["eleve"], font=manuscrit, fill=(28, 52, 96))
+    dessin.text((760, 70), "%s — %s" % (copie["classe"], copie["devoir"]), font=imprime, fill=(40, 40, 40))
+    y = 190
+    dessin.text((180, y), copie["titre"], font=imprime, fill=(40, 40, 40))
+    y += 70
+
+    alea = random.Random(hash(copie["id"]) & 0xFFFF)
+    index = 0
+    for ligne in copie["lignes"]:
+        genre = ligne["type"]
+        if genre == "enonce":
+            dessin.text((190, y), ligne["texte"], font=imprime, fill=(35, 35, 35))
+            y += 62
+        elif genre == "eleve":
+            # L'écriture manuscrite n'est jamais parfaitement droite
+            _texte_manuscrit(dessin, ligne["texte"], 215 + alea.randint(-6, 8), y + alea.randint(-4, 4),
+                             manuscrit, (24, 48, 112), alea.uniform(-1.1, 1.1))
+            y += 72
+        elif genre == "corrige":
+            # Le professeur corrige en marge : la position varie d'une ligne à l'autre
+            marge = 690 + alea.randint(0, 120)
+            _texte_manuscrit(dessin, ligne.get("texte", ""), marge, y + alea.randint(-4, 6),
+                             petit, (178, 30, 30), alea.uniform(-1.4, 1.4))
+            if ligne.get("prof"):
+                _texte_manuscrit(dessin, ligne["prof"], marge, y + 36, petit, (178, 30, 30),
+                                 alea.uniform(-1.4, 1.4))
+            y += 84
+        else:  # annotation libre du professeur
+            _texte_manuscrit(dessin, ligne.get("texte", ""), 720 + alea.randint(0, 90), y,
+                             petit, (178, 30, 30), alea.uniform(-1.2, 1.2))
+            y += 60
+        index += 1
+
+    dessin.text((1010, 150), copie.get("note", ""), font=manuscrit, fill=(178, 30, 30))
+    return page
+
+
+def _texte_manuscrit(dessin, texte, x, y, police, couleur, angle):
+    """Écrit le texte sur un calque transparent puis le pose légèrement incliné."""
+    if not texte:
+        return
+    largeur = int(police.getbbox(texte)[2] - police.getbbox(texte)[0]) + 24
+    hauteur = int(police.getbbox(texte)[3] - police.getbbox(texte)[1]) + 24
+    calque = Image.new("RGBA", (largeur + 40, hauteur + 40), (0, 0, 0, 0))
+    ImageDraw.Draw(calque).text((20, 20), texte, font=police, fill=couleur + (255,))
+    calque = calque.rotate(angle, resample=Image.BICUBIC, expand=False)
+    dessin._image.paste(calque, (x - 20, y - 20), calque)
+
+
+def _deformer(page, graine):
+    """Perspective : la page est photographiée de biais, pas à plat."""
+    alea = random.Random(graine)
+    largeur, hauteur = page.size
+    # quadrilatère source : la page penche légèrement
+    dx = alea.uniform(0.03, 0.08) * largeur
+    dy = alea.uniform(0.02, 0.06) * hauteur
+    # Image.QUAD attend 8 valeurs : les 4 coins de la source, dans l'ordre
+    # haut-gauche, bas-gauche, bas-droite, haut-droite.
+    quadrilatere = (
+        int(dx), int(dy),
+        int(dx * 0.4), int(hauteur - dy * 0.3),
+        int(largeur - dx * 0.3), int(hauteur - dy),
+        int(largeur - dx), int(dy * 0.5),
+    )
+    # recadrage : on garde la page entière avec un peu de marge
+    marge = int(largeur * 0.05)
+    cible = (largeur + 2 * marge, hauteur + 2 * marge)
+    deforme = page.transform(cible, Image.QUAD, quadrilatere, resample=Image.BICUBIC)
+    return deforme.crop((marge, marge, marge + largeur, marge + hauteur))
+
+
+def _eclairage(page, graine):
+    """Lumière inégale + vignette : l'appareil n'éclaire pas uniformément."""
+    alea = random.Random(graine)
+    largeur, hauteur = page.size
+    direction = alea.choice((-1, 1))
+    # Petit dégradé agrandi : pas de bandes horizontales visibles.
+    petit = Image.new("L", (4, 64), 0)
+    dessin_p = ImageDraw.Draw(petit)
+    for i in range(64):
+        valeur = int(255 - (i / 64) * alea.uniform(30, 70))
+        dessin_p.line([(0, i), (4, i)], fill=valeur)
+    masque = petit.resize((largeur, hauteur), Image.BICUBIC)
+    if direction < 0:
+        masque = ImageOps.mirror(masque)
+    eclaire = ImageChops.multiply(page, Image.merge("RGB", (masque, masque, masque)))
+    # vignette : les coins sont plus sombres
+    vignette = Image.new("L", (largeur, hauteur), 0)
+    dessin_v = ImageDraw.Draw(vignette)
+    rayon = int(max(largeur, hauteur) * 0.72)
+    dessin_v.ellipse(
+        (largeur // 2 - rayon, hauteur // 2 - rayon, largeur // 2 + rayon, hauteur // 2 + rayon),
+        fill=255,
+    )
+    vignette = vignette.filter(ImageFilter.GaussianBlur(rayon // 3))
+    # La vignette assombrit un peu, pas tout : une photo sombre reste lisible.
+    vignette = ImageEnhance.Brightness(vignette).enhance(0.62)
+    return ImageChops.multiply(eclaire, Image.merge("RGB", (vignette, vignette, vignette)))
+
+
+def _bruit_et_flou(page, graine):
+    """Grain de capteur et léger flou de mise au point."""
+    alea = random.Random(graine)
+    largeur, hauteur = page.size
+    bruit = Image.effect_noise((largeur, hauteur), 9).convert("RGB")
+    melange = Image.blend(page, bruit, 0.045)
+    return melange.filter(ImageFilter.GaussianBlur(alea.uniform(0.4, 0.9)))
+
+
+def _bureau(page, graine):
+    """La page est posée sur une table, avec une ombre portée."""
+    alea = random.Random(graine)
+    largeur, hauteur = page.size
+    marge = int(largeur * 0.06)
+    toile = Image.new("RGB", (largeur + 2 * marge, hauteur + 2 * marge), (58, 54, 50))
+    texture = Image.effect_noise(toile.size, 14).convert("RGB")
+    toile = Image.blend(toile, texture, 0.18)
+    grain = Image.effect_noise(toile.size, 7).convert("RGB")
+    toile = Image.blend(toile, grain, 0.06)
+    ombre = Image.new("L", toile.size, 0)
+    ImageDraw.Draw(ombre).rectangle(
+        (marge + 18, marge + 22, marge + largeur + 10, marge + hauteur + 10), fill=150
+    )
+    ombre = ombre.filter(ImageFilter.GaussianBlur(34))
+    toile.paste(Image.new("RGB", toile.size, (30, 28, 26)), (0, 0), ombre)
+    toile.paste(page, (marge, marge))
+    return toile.rotate(alea.uniform(-1.4, 1.4), resample=Image.BICUBIC, expand=False)
+
+
+def _photographier(page, graine):
+    """Chaîne complète : déformation, lumière, grain, flou, table, angle."""
+    image = _deformer(page, graine)
+    image = _eclairage(image, graine + 1)
+    image = _bruit_et_flou(image, graine + 2)
+    image = _bureau(image, graine + 3)
+    return image
+
+
+def generer_demo(source="corpus/copies-demo.json", sortie="corpus/demo"):
+    """Rend les copies de la démo et les « photographie » (JPEG, comme un téléphone)."""
+    donnees = json.loads(pathlib.Path(source).read_text(encoding="utf-8"))
+    dossier = pathlib.Path(sortie)
+    dossier.mkdir(parents=True, exist_ok=True)
+    for index, copie in enumerate(donnees["copies"]):
+        page = _rendre_copie(copie, dossier)
+        photo = _photographier(page, 1000 + index)
+        chemin = dossier / ("%s.jpg" % copie["id"])
+        photo.save(chemin, "JPEG", quality=74)
+        print("%s — %dx%d, %d Ko" % (chemin, photo.size[0], photo.size[1], chemin.stat().st_size // 1024))
 
 
 if __name__ == "__main__":

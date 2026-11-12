@@ -1,0 +1,18 @@
+{
+  "source": "corpus/demo/copie-demo-3.jpg",
+  "modele": "ag/gemini-4-carbon",
+  "enregistreLe": "2026-11-12T19:43:55.862Z",
+  "dominant": "E06",
+  "nbFautes": 4,
+  "revues": 0,
+  "durees": {
+    "extrait": 10705,
+    "classifie": 0,
+    "genere": 7869
+  },
+  "reponses": {
+    "analyse": "{\"annotations\":[{\"ligne\":\"G = 2x³\",\"annotation\":\"G = 8x³ / le 2 aussi\",\"code\":\"E06\",\"confiance\":0.92,\"explication\":\"La puissance s'applique aussi au coefficient 2 : 2³ = 8.\",\"eleve\":\"2x³\",\"attendu\":\"8x³\",\"zone\":{\"x\":0.55,\"y\":0.27,\"largeur\":0.35,\"hauteur\":0.08}},{\"ligne\":\"H = x¹⁰\",\"annotation\":\"H = x⁷ / on additionne\",\"code\":\"E06\",\"confiance\":0.9,\"explication\":\"La multiplication de puissances de même base additionne les exposants : 5+2 = 7.\",\"eleve\":\"x¹⁰\",\"attendu\":\"x⁷\",\"zone\":{\"x\":0.55,\"y\":0.44,\"largeur\":0.35,\"hauteur\":0.08}},{\"ligne\":\"I = 3 + 4\",\"annotation\":\"I = √25 = 5 / non !\",\"code\":\"E07\",\"confiance\":0.93,\"explication\":\"La racine d'une somme ne se sépare pas en somme de racines.\",\"eleve\":\"3 + 4\",\"attendu\":\"√25 = 5\",\"zone\":{\"x\":0.55,\"y\":0.59,\"largeur\":0.38,\"hauteur\":0.08}},{\"ligne\":\"J = 25√2\",\"annotation\":\"J = 5√2 / la racine de 25\",\"code\":\"E07\",\"confiance\":0.91,\"explication\":\"√50 = √(25×2) = 5√2, pas 25√2 : il faut prendre la racine de 25.\",\"eleve\":\"25√2\",\"attendu\":\"5√2\",\"zone\":{\"x\":0.55,\"y\":0.76,\"largeur\":0.38,\"hauteur\":0.08}}],\"copiePropre\":false}",
+    "exercice": "{\"enonce\":\"Simplifie l'expression suivante : (3x²)³\",\"indices\":[\"La puissance s'applique à chaque facteur du produit, pas seulement à x.\"],\"solution\":\"(3x²)³ = 3³ × (x²)³ = 27 × x⁶ = 27x⁶. Erreur fréquente : écrire 3x⁶ en oubliant d'élever 3 au cube. L'exposant 3 s'applique bien à tous les facteurs.\",\"niveau\":\"seconde\"}",
+    "verdict": "{\"travailleLeBonType\":true,\"neDonneLaSolutionOrigine\":true,\"memeNiveau\":true,\"motifs\":[]}"
+  }
+}

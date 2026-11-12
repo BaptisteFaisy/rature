@@ -35,8 +35,12 @@ const AMONT = process.env.RATURE_AMONT ?? 'https://api.inferhub.dev/v1'
 const DELAI_MS = 240_000
 const transport: Transport = { proxy: `${AMONT}/chat/completions` }
 
-/** Copies enregistrées pour la démo : un identifiant = un fichier de réponses. */
-const COPIES_DEMO = ['copie-1-signes.png', 'copie-4-developpement.png', 'copie-6-puissances.png']
+/**
+ * Copies enregistrées pour la démo : elles sont lues dans `corpus/demo/` (les
+ * « photos » de l'élève), et chacune donne un fichier de réponses de même nom.
+ */
+const DOSSIER_DEMO = '../../corpus/demo'
+const COPIES_DEMO = ['copie-demo-1.jpg', 'copie-demo-2.jpg', 'copie-demo-3.jpg']
 
 async function appeler(requete: RequeteLLM, modele: string): Promise<string> {
   const reponse = await fetch(`${AMONT}/chat/completions`, {
@@ -73,47 +77,62 @@ function clientEnregistreur(brut: Record<string, string[]>, cle: string): Client
 }
 
 function imageDataUrl(nom: string): string {
-  const chemin = fileURLToPath(new URL(`../../corpus/images/${nom}`, import.meta.url))
-  return `data:image/png;base64,${readFileSync(chemin).toString('base64')}`
+  const chemin = fileURLToPath(new URL(`${DOSSIER_DEMO}/${nom}`, import.meta.url))
+  const octets = readFileSync(chemin)
+  const type = nom.endsWith('.jpg') ? 'image/jpeg' : 'image/png'
+  return `data:${type};base64,${octets.toString('base64')}`
 }
 
 function cheminSortie(nom: string): string {
-  return fileURLToPath(new URL(`../../corpus/reponses/${nom.replace('.png', '.json')}`, import.meta.url))
+  const base = nom.replace(/\.(png|jpg)$/, '.json')
+  return fileURLToPath(new URL(`../../corpus/reponses/${base}`, import.meta.url))
 }
 
 /** Enchaîne le chemin réel du produit sur une copie et écrit les réponses. */
 async function enregistrer(nom: string) {
   const brut: Record<string, string[]> = {}
-  const { extraction, erreurs } = await analyserImage(
-    imageDataUrl(nom),
-    transport,
-    clientEnregistreur(brut, 'analyse'),
+  // Les durées réelles de chaque étape sont capturées : la démo rejouera ce
+  // rythme-là, au lieu d'être instantanée (et donc invraisemblable).
+  const durees: Record<string, number> = {}
+  const chrono = async <T>(etape: string, travail: () => Promise<T>): Promise<T> => {
+    const debut = Date.now()
+    const resultat = await travail()
+    durees[etape] = Date.now() - debut
+    return resultat
+  }
+  const { extraction, erreurs } = await chrono('extrait', () =>
+    analyserImage(imageDataUrl(nom), transport, clientEnregistreur(brut, 'analyse')),
   )
-  const revue = await revoirFautesPeuSures(erreurs, transport, clientEnregistreur(brut, 'revue'))
+  const revue = await chrono('classifie', () =>
+    revoirFautesPeuSures(erreurs, transport, clientEnregistreur(brut, 'revue')),
+  )
   const diagnostic = construireDiagnostic(revue.erreurs, { id: nom, createdAt: new Date().toISOString() })
   expect(diagnostic.typeDominant, `${nom} : aucun type dominant`).toBeTruthy()
 
-  await genererExerciceVerifie({
-    typeDominant: diagnostic.typeDominant!,
-    extraitCopie: extraction.annotations.map((a) => a.ligne).slice(0, 6).join('\n'),
-    transport,
-    client: async (requete: RequeteLLM) => {
-      const cle = requete.system.includes('Garde-fou') ? 'verdict' : 'exercice'
-      return clientEnregistreur(brut, cle)(requete)
-    },
-  })
+  await chrono('genere', () =>
+    genererExerciceVerifie({
+      typeDominant: diagnostic.typeDominant!,
+      extraitCopie: extraction.annotations.map((a) => a.ligne).slice(0, 6).join('\n'),
+      transport,
+      client: async (requete: RequeteLLM) => {
+        const cle = requete.system.includes('Garde-fou') ? 'verdict' : 'exercice'
+        return clientEnregistreur(brut, cle)(requete)
+      },
+    }),
+  )
 
   mkdirSync(fileURLToPath(new URL('../../corpus/reponses/', import.meta.url)), { recursive: true })
   writeFileSync(
     cheminSortie(nom),
     `${JSON.stringify(
       {
-        source: `corpus/images/${nom}`,
+        source: `corpus/demo/${nom}`,
         modele: MODELE_PAR_DEFAUT,
         enregistreLe: new Date().toISOString(),
         dominant: diagnostic.typeDominant,
         nbFautes: diagnostic.nbFautes,
         revues: revue.revues,
+        durees,
         reponses: Object.fromEntries(Object.entries(brut).map(([cle, liste]) => [cle, liste[0]])),
       },
       null,

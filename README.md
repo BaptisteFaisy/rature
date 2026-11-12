@@ -152,12 +152,14 @@ Le produit parle une API [OI]-compatible servie par **InferHub**. Trois modes, d
    - Cloudflare Worker : `worker/worker.js` (`wrangler deploy`, `wrangler secret put INFERHUB_API_KEY`).
 2. **BYOK** : l'utilisateur colle sa clé dans Réglages ; elle part dans l'en-tête `x-rature-cle` et
    reste sur l'appareil. Filet de sécurité si le quota du proxy est épuisé pendant le jugement.
-3. **Mode démonstration** : l'accueil rejoue le parcours complet sur **trois copies d'exemple**,
-   avec les réponses du modèle **réellement enregistrées** (`corpus/reponses/`) : aucun appel
-   réseau, aucune clé, et l'UI le dit. Trois copies, c'est ce qui rend visibles hors ligne le
-   **profil** et sa **trajectoire** ; le mode professeur a le même bouton (« lot de démonstration »)
-   pour la statistique de classe. Ajouter un enregistrement dans `corpus/reponses/` étend la démo
-   sans toucher au code (découverte au build). C'est le filet de sécurité du jour du jugement.
+3. **Mode démonstration** : l'accueil rejoue le parcours complet sur **trois copies du même élève**
+   (`corpus/copies-demo.json`), rendues comme de **vraies photos** (page penchée sur une table,
+   lumière inégale, grain de capteur, corrections du professeur en rouge) puis analysées par le
+   vrai modèle. Les réponses **et les durées mesurées** sont réenregistrées (`corpus/reponses/`) :
+   la démo reproduit le rythme réel d'une analyse (≈ 12 s), sans appel réseau ni clé, et l'UI le
+   dit. Trois copies, c'est ce qui rend visibles hors ligne le **profil**, sa **trajectoire** et le
+   mode professeur (« lot de démonstration »). Ajouter un enregistrement étend la démo sans toucher
+   au code (découverte au build).
 
 Variables : voir [`.env.example`](.env.example).
 

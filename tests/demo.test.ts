@@ -38,7 +38,7 @@ describe('mode démonstration', () => {
   })
 
   it.each(ID_COPIES_DEMO)('la copie %s se rejoue en un diagnostic typé', async (id) => {
-    const client = clientDemoPour(id)
+    const client = clientDemoPour(id, { attente: false })
     const meta = origineDemo(id)
     expect(meta).not.toBeNull()
 
@@ -64,7 +64,7 @@ describe('mode démonstration', () => {
   it('un enregistrement sans réponse de seconde passe lève un message explicite', async () => {
     const copie = COPIES_DEMO.find((c) => !c.enregistrement.reponses.revue)
     if (!copie) return // toutes les copies ont une revue enregistrée : rien à tester
-    const client = clientDemoPour(copie.id)
+    const client = clientDemoPour(copie.id, { attente: false })
     await expect(client({ system: PROMPT_REVUE, user: 'x' })).rejects.toThrow(/recapturer/)
   })
 })
