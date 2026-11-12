@@ -48,7 +48,7 @@ const REPONSES = import.meta.glob<Enregistrement>('../../corpus/reponses/*.json'
   eager: true,
   import: 'default',
 })
-const IMAGES = import.meta.glob<string>('../../corpus/images/*.png', { eager: true, import: 'default' })
+const IMAGES = import.meta.glob<string>('../../corpus/demo/*.png', { eager: true, import: 'default' })
 
 function idDepuisChemin(chemin: string): string {
   const base = chemin.slice(chemin.lastIndexOf('/') + 1)
