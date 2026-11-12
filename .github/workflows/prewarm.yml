@@ -1,0 +1,45 @@
+name: prewarm
+
+# Pré-warm du proxy (idée 3) : Modal fait du scale-to-zero après 60 s d'inactivité
+# et un conteneur froid met 3 à 5 s à répondre — mesuré le 11/11, où la sonde de
+# santé de l'app (timeout 5 s) annonçait à tort « modèle indisponible ».
+#
+# Un ping toutes les 5 minutes garde un conteneur chaud, donc la première
+# analyse d'un visiteur ne paie plus le démarrage. Tourne sur un runner hébergé
+# (gratuit pour un dépôt public) pour ne pas occuper les runners auto-hébergés.
+#
+# Aucune clé n'est nécessaire : /health ne touche pas InferHub.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prewarm
+  cancel-in-progress: true
+
+jobs:
+  prewarm:
+    name: prewarm
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping du proxy
+        shell: bash
+        run: |
+          set -uo pipefail
+          URL="${{ vars.RATURE_PROXY_URL }}"
+          SANTE="${URL%/analyze}/health"
+          echo "sonde : $SANTE"
+          for essai in 1 2 3; do
+            code=$(curl -s -o /tmp/reponse.json -w '%{http_code}' --max-time 30 "$SANTE" || echo 000)
+            echo "essai $essai : HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          cat /tmp/reponse.json || true
+          # Jamais rouge : un pré-warm raté ne doit pas bloquer une PR ni alerter.
+          exit 0

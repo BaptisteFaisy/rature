@@ -1,0 +1,79 @@
+name: CI
+
+# CI de Raturé : typecheck strict, tests (domaine, corpus, quota du proxy),
+# build de production et gardes de qualité (taille des fichiers/fonctions,
+# contrôles du socle). Verdict en quelques dizaines de secondes sur un runner
+# auto-hébergé du r630 ; budget dur de 5 minutes (règle user 2026-10-24).
+#
+# Le check publié s'appelle `ci` (nom du job) : il est exigé par le ruleset de
+# `main`, par la file Mergify, avec `ci-budget` et `couche0`.
+on:
+  pull_request:
+  # File de merge : même contrôle sur le commit temporaire du groupe.
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          clean: false
+
+      # Runners auto-hébergés persistants : un sous-dossier parasite d'un run
+      # précédent peut survivre et fausser les tests. Nettoyage complet.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Nettoyage du workspace
+        shell: bash
+        run: git clean -ffdx
+
+      # Node n'est pas dans le PATH d'un shell non connecté sur le worker :
+      # `~/bin` porte `node`, `npm` et `gh`.
+      - name: Dépendances
+        shell: bash
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Typecheck (strict)
+        shell: bash
+        run: npm run typecheck
+
+      - name: Tests (logique pure, aucun réseau)
+        shell: bash
+        run: npm test
+
+      - name: Build de production
+        shell: bash
+        run: npm run build
+
+      # Garde de taille : < 500 lignes par fichier, fonctions < 50 lignes.
+      - name: Taille des fichiers et des fonctions
+        shell: bash
+        run: node scripts/check-tokens.mjs
+
+      # Les gardes de la CI se testent elles-mêmes : couche0 + agents de
+      # conflit. stdlib Python, quelques secondes, aucun réseau.
+      - name: Tests des gardes CI (couche0, agents)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
+          python3 .github/couche0/test_check_couche0.py
+          python3 .github/fireworks/test_conflict_agent.py
+          python3 .github/fireworks/test_scope_agent.py
+          python3 .github/fireworks/test_union_journal.py
+          python3 .github/fireworks/test_quota.py

@@ -1,0 +1,67 @@
+{
+  "copies": [
+    {
+      "id": "copie-demo-1",
+      "eleve": "Léa M.",
+      "classe": "2nde 4",
+      "devoir": "Devoir n°3",
+      "titre": "Exercice 1 : développer et réduire",
+      "note": "11/20",
+      "types_attendus": ["E01", "E11"],
+      "lignes": [
+        { "type": "enonce", "texte": "A = -2(3x - 5)" },
+        { "type": "eleve", "texte": "A = -6x - 10" },
+        { "type": "corrige", "texte": "A = -6x + 10", "prof": "signe !" },
+        { "type": "enonce", "texte": "B = 4(x - 1) - 3(x + 2)" },
+        { "type": "eleve", "texte": "B = 4x - 4 - 3x + 6" },
+        { "type": "corrige", "texte": "B = 4x - 4 - 3x - 6", "prof": "-3 x +2 ?" },
+        { "type": "enonce", "texte": "C = 2x + 7" },
+        { "type": "eleve", "texte": "C = 2x + 3 + 4" },
+        { "type": "annotation", "texte": "Recopie : l'énoncé donnait 2x + 7." }
+      ]
+    },
+    {
+      "id": "copie-demo-2",
+      "eleve": "Léa M.",
+      "classe": "2nde 4",
+      "devoir": "Devoir n°4",
+      "titre": "Exercice 2 : développer et réduire",
+      "note": "13/20",
+      "types_attendus": ["E01", "E02"],
+      "lignes": [
+        { "type": "enonce", "texte": "D = 5 - 3(2x - 1)" },
+        { "type": "eleve", "texte": "D = 5 - 6x - 3" },
+        { "type": "corrige", "texte": "D = 5 - 6x + 3", "prof": "signe" },
+        { "type": "enonce", "texte": "E = 4(3x + 2)" },
+        { "type": "eleve", "texte": "E = 12x + 2" },
+        { "type": "corrige", "texte": "E = 12x + 8", "prof": "le 4 sur le 2 ?" },
+        { "type": "enonce", "texte": "F = 7x - 2(x - 3)" },
+        { "type": "eleve", "texte": "F = 7x - 2x - 3" },
+        { "type": "corrige", "texte": "F = 7x - 2x + 6", "prof": "signe" }
+      ]
+    },
+    {
+      "id": "copie-demo-3",
+      "eleve": "Léa M.",
+      "classe": "2nde 4",
+      "devoir": "Devoir n°5",
+      "titre": "Exercice 3 : puissances et racines",
+      "note": "15/20",
+      "types_attendus": ["E06", "E07"],
+      "lignes": [
+        { "type": "enonce", "texte": "G = (2x)³" },
+        { "type": "eleve", "texte": "G = 2x³" },
+        { "type": "corrige", "texte": "G = 8x³", "prof": "le 2 aussi" },
+        { "type": "enonce", "texte": "H = x⁵ × x²" },
+        { "type": "eleve", "texte": "H = x¹⁰" },
+        { "type": "corrige", "texte": "H = x⁷", "prof": "on additionne" },
+        { "type": "enonce", "texte": "I = √(9 + 16)" },
+        { "type": "eleve", "texte": "I = 3 + 4" },
+        { "type": "corrige", "texte": "I = √25 = 5", "prof": "non !" },
+        { "type": "enonce", "texte": "J = √50" },
+        { "type": "eleve", "texte": "J = 25√2" },
+        { "type": "corrige", "texte": "J = 5√2", "prof": "la racine de 25" }
+      ]
+    }
+  ]
+}

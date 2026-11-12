@@ -1,0 +1,65 @@
+name: pages
+
+# Déploiement de la webapp statique sur GitHub Pages (URL publique HTTPS,
+# gratuite). Ce workflow n'est pas un check de PR : il ne tourne que sur
+# `main` et à la demande. Budget 5 min comme tout le reste.
+#
+# La clé InferHub n'est jamais ici : le site appelle soit le proxy edge
+# (`/api/analyze`), soit InferHub en BYOK (CORS ouvert), soit le mode démo
+# (réponses enregistrées sur le corpus).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build-pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dépendances
+        shell: bash
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Build (base Pages)
+        shell: bash
+        env:
+          VITE_BASE: /rature/
+          # Variable de dépôt (publique) : adresse du proxy edge déployé.
+          VITE_PROXY_URL: ${{ vars.RATURE_PROXY_URL }}
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: deploy-pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
