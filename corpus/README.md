@@ -32,6 +32,10 @@ manuscrite Caveat, annotations du professeur en rouge) :
   contraste réduit) pour approcher une photo de téléphone : la copie 1, la
   copie 6 et la copie propre.
 
+`corpus/demo/` contient les **3 images** retenues pour la démonstration hors ligne
+(copies 1, 4 et 6) : le build n'embarque que celles-là, pas les 1,5 Mo du corpus
+complet. Elles sont recopiées par `generer-copies.py`, jamais éditées à la main.
+
 Le `manifeste.json` porte la vérité terrain (`fichier`, `dominant`,
 `degradee`) : il est **généré en même temps que les images**, donc l'attente du
 banc ne peut pas diverger du corpus.

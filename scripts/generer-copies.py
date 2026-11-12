@@ -23,6 +23,7 @@ import argparse
 import json
 import pathlib
 import random
+import shutil
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
@@ -205,6 +206,11 @@ COPIES = [
     },
 ]
 
+# Copies retenues pour la démonstration hors ligne : leurs images sont copiées
+# dans `corpus/demo/` pour que le build n'embarque QUE celles-là (le corpus
+# complet pèse 1,5 Mo, dont les versions dégradées à 400 Ko).
+DEMO_IDS = ["copie-1-signes", "copie-4-developpement", "copie-6-puissances"]
+
 DEGRADATIONS = {
     "copie-1-signes-photo": ("copie-1-signes", {"rotation": -2.5, "lumiere": 70, "bruit": 1.6, "flou": 0.5, "contraste": 0.85}),
     "copie-6-puissances-photo": ("copie-6-puissances", {"rotation": 3.0, "lumiere": 90, "bruit": 2.4, "flou": 0.7, "contraste": 0.8}),
@@ -235,6 +241,11 @@ def main():
         manifeste.append({"fichier": f"{nom}.png", "dominant": par_id[source]["dominant"], "degradee": True})
 
     (sortie / "manifeste.json").write_text(json.dumps({"copies": manifeste}, indent=2) + "\n")
+
+    demo = sortie.parent / "demo"
+    demo.mkdir(parents=True, exist_ok=True)
+    for identifiant in DEMO_IDS:
+        shutil.copyfile(sortie / ("%s.png" % identifiant), demo / ("%s.png" % identifiant))
     for entree in manifeste:
         print("%-34s dominant=%-5s dégradée=%s" % (entree["fichier"], entree["dominant"], entree["degradee"]))
 
