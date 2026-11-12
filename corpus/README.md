@@ -43,6 +43,20 @@ même élève, où la faute de **signe** revient puis se corrige. Les réponses 
 (`corpus/reponses/`) sont **réenregistrées** sur ces photos avec le vrai modèle — donc si tu touches
 à `copies-demo.json`, il faut recapturer (`tests/live/enregistrer-demo.test.ts`).
 
+## Où trouver de vraies copies (source externe)
+
+Recherche faite le 12/11 (DuckDuckGo/Google/Bing) : **les photos de vraies copies d'élèves
+corrigées et annotées par le professeur ne sont pas librement téléchargeables**. Ce qui existe :
+
+- des **services payants** de correction à la main (`copie-corrigee.fr`) ;
+- des **blogs de profs** qui montrent parfois un travail d'élève anonymisé en exemple
+  (`mathix.org`, `professeurtheros.fr`, `maths-et-tiques.fr`) ;
+- des PDF académiques de **corrections officielles** (qui ne montrent pas les erreurs d'élèves).
+
+**Le chemin validé reste donc : photographier 5 vraies copies corrigées + 2 copies propres**
+(protocole ci-dessous). En attendant, `corpus/demo/` fournit 3 « photos » photoréalistes du même
+élève, et `corpus/images/` le corpus synthétique contrôlé.
+
 Le `manifeste.json` porte la vérité terrain (`fichier`, `dominant`,
 `degradee`) : il est **généré en même temps que les images**, donc l'attente du
 banc ne peut pas diverger du corpus.
