@@ -104,7 +104,7 @@ clé, un modèle, pas d'enchère) : c'est un changement de configuration
 ## Validation de bout en bout sur la démo publique (22 h 27, même jour)
 
 Parcours réel, sans aucune clé côté navigateur : photo téléversée sur
-<https://baptistefaisy.github.io/rature/> → proxy Modal → InferHub → diagnostic.
+<https://tradoooo.github.io/rature/> → proxy Modal → InferHub → diagnostic.
 
 Image envoyée : `copie-6-puissances-photo.png` (la **dégradée** : rotation 3°,
 lumière inégale, bruit, flou).

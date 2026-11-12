@@ -6,8 +6,8 @@ Les soumissions en retard ne sont pas acceptées.
 
 ## Critères d'acceptation du produit (§25 du cahier des charges)
 
-- [x] Le repo est public : <https://github.com/BaptisteFaisy/rature>
-- [x] L'URL publique fonctionne en HTTPS : <https://baptistefaisy.github.io/rature/>
+- [x] Le repo est public : <https://github.com/Tradoooo/rature>
+- [x] L'URL publique fonctionne en HTTPS : <https://tradoooo.github.io/rature/>
 - [x] Le README explique le pipeline, les décisions et les échecs
 - [x] Une copie **sans erreur** retourne « aucune erreur détectée » (test RNF-04 : 0 appel, 0 faute)
 - [x] Le profil d'erreur s'affiche après 2 analyses successives (IndexedDB local)

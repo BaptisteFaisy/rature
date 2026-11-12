@@ -34,7 +34,7 @@ Services : unités systemd **utilisateur** `actions-runner-rature-0N.service`
 Vérifier l'état :
 
 ```bash
-gh api repos/BaptisteFaisy/rature/actions/runners \
+gh api repos/Tradoooo/rature/actions/runners \
   --jq '[.runners[] | select(.status=="online")] | length'   # attendu : 3
 export XDG_RUNTIME_DIR=/run/user/$(id -u)                    # sinon systemctl --user échoue
 systemctl --user list-units 'actions-runner-rature*' --all
@@ -60,7 +60,7 @@ même pour un agent.
 `.mergify.yml` : `queue_rules.default` (les 3 checks verts, pas de conflit, pas
 de brouillon, base `main`), `merge_method: rebase`, lots de 1 à 3,
 `max_parallel_checks: 2` pour quatre workers. Le produit *Merge Queue* est
-activé par API (`PUT /v1/products/BaptisteFaisy/rature` → 204) et
+activé par API (`PUT /v1/products/Tradoooo/rature` → 204) et
 `merge_protections` avec `auto_merge_conditions: true`, donc une PR verte
 s'embarque **sans commentaire**.
 
@@ -93,7 +93,7 @@ proxy edge, avec une clé qui ne descend **jamais** dans le bundle.
 ## 5. Déploiement
 
 `pages.yml` construit la webapp statique et la publie automatiquement sur GitHub Pages (déploiement vérifié le 11 novembre, 6db57e8)
-(`https://baptistefaisy.github.io/rature/`) à chaque push sur `main` — public,
+(`https://tradoooo.github.io/rature/`) à chaque push sur `main` — public,
 HTTPS, gratuit, sans jeton. La clé InferHub n'y est pas : le site parle au
 proxy edge (`/api/analyze`, voir `api/analyze.ts` et la variante
 `worker/worker.js`) ou, à défaut, en **BYOK** (l'utilisateur colle sa clé) ou
