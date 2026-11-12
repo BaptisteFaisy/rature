@@ -29,6 +29,8 @@ type Enregistrement = {
   /** Absent des enregistrements antérieurs au 12/11 : toléré. */
   nbFautes?: number
   revues?: number
+  /** Durées réelles mesurées lors de l'enregistrement, rejouées par la démo. */
+  durees?: Record<string, number>
   reponses: Record<string, string>
 }
 
@@ -48,7 +50,7 @@ const REPONSES = import.meta.glob<Enregistrement>('../../corpus/reponses/*.json'
   eager: true,
   import: 'default',
 })
-const IMAGES = import.meta.glob<string>('../../corpus/demo/*.png', { eager: true, import: 'default' })
+const IMAGES = import.meta.glob<string>('../../corpus/demo/*.{png,jpg}', { eager: true, import: 'default' })
 
 function idDepuisChemin(chemin: string): string {
   const base = chemin.slice(chemin.lastIndexOf('/') + 1)
@@ -98,18 +100,41 @@ export function etapeDe(requete: RequeteLLM): EtapeDemo {
   return 'analyse'
 }
 
-/** Client de rejeu pour une copie donnée. */
-export function clientDemoPour(id?: string): ClientBrut {
+/** Pause courte : la démo rejoue le rythme réel de l'enregistrement. */
+function attendre(ms: number): Promise<void> {
+  return new Promise((resoudre) => setTimeout(resoudre, ms))
+}
+
+/**
+ * Client de rejeu pour une copie donnée. La réponse est instantaneous, mais on
+ * **attend la durée réellement mesurée** lors de l'enregistrement : sans cela,
+ * la démo serait instantanée et donc peu crédible (« 0,1 s » pour une analyse
+ * complète est un signal d'alerte pour un juge technique).
+ */
+export function clientDemoPour(id?: string, options: { attente?: boolean } = {}): ClientBrut {
   const copie = copieDemo(id)
   if (!copie) throw new Error('Mode démo : aucune réponse enregistrée dans corpus/reponses/.')
   const reponses = copie.enregistrement.reponses
+  const durees = copie.enregistrement.durees ?? {}
+  const attendu = options.attente ?? true
   return async (requete: RequeteLLM) => {
-    const texte = reponses[etapeDe(requete)]
+    const etape = etapeDe(requete)
+    const texte = reponses[etape]
     if (!texte) {
       throw new Error(
-        `Mode démo : pas de réponse enregistrée pour l'étape « ${etapeDe(requete)} » — recapturer le corpus.`,
+        `Mode démo : pas de réponse enregistrée pour l'étape « ${etape} » — recapturer le corpus.`,
       )
     }
+    // Les durées sont enregistrées par ÉTAPE du pipeline (extrait, classifie,
+    // genere), alors que l'appel est identifié par son prompt. Correspondance :
+    const etapePipeline = {
+      analyse: 'extrait',
+      revue: 'classifie',
+      exercice: 'genere',
+      verdict: 'genere',
+    }[etape]
+    const duree = durees[etapePipeline]
+    if (attendu && typeof duree === 'number' && duree > 0 && duree < 60_000) await attendre(duree)
     return texte
   }
 }

@@ -32,9 +32,16 @@ manuscrite Caveat, annotations du professeur en rouge) :
   contraste réduit) pour approcher une photo de téléphone : la copie 1, la
   copie 6 et la copie propre.
 
-`corpus/demo/` contient les **3 images** retenues pour la démonstration hors ligne
-(copies 1, 4 et 6) : le build n'embarque que celles-là, pas les 1,5 Mo du corpus
-complet. Elles sont recopiées par `generer-copies.py`, jamais éditées à la main.
+`corpus/demo/` contient les **3 photos** de la démonstration hors ligne : les copies d'un même
+élève (`corpus/copies-demo.json`), rendues puis passées par une **chaîne caméra** (perspective,
+lumière inégale, vignette, grain, flou, ombre portée sur une table) pour ressembler à de vraies
+photos de téléphone — pas à des captures d'écran. Elles sont générées par
+`python3 scripts/generer-copies.py --demo`, jamais éditées à la main.
+
+Le fichier `corpus/copies-demo.json` est la source de vérité de cette histoire : trois devoirs du
+même élève, où la faute de **signe** revient puis se corrige. Les réponses de la démo
+(`corpus/reponses/`) sont **réenregistrées** sur ces photos avec le vrai modèle — donc si tu touches
+à `copies-demo.json`, il faut recapturer (`tests/live/enregistrer-demo.test.ts`).
 
 Le `manifeste.json` porte la vérité terrain (`fichier`, `dominant`,
 `degradee`) : il est **généré en même temps que les images**, donc l'attente du

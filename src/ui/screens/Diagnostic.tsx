@@ -84,8 +84,9 @@ export function Diagnostic() {
 
       {demo ? (
         <p className="rounded-lg border border-bord bg-surface-2 px-3 py-2 text-xs text-muet">
-          Démonstration — {demo.titre} : réponses du modèle ({demo.modele}) enregistrées le{' '}
-          {demo.enregistreLe.slice(0, 10)}. Aucun appel réseau.
+          Démonstration — {demo.titre} : réponses **et durées réelles** enregistrées le{' '}
+          {demo.enregistreLe.slice(0, 10)} avec {demo.modele}. Aucun appel réseau pendant la
+          démonstration.
         </p>
       ) : null}
 
