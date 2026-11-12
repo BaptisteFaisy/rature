@@ -55,7 +55,7 @@ Générateur déterministe (graine fixe, donc aucun test qui flotte).
 ### Vérification en navigateur réel (site publié)
 
 1 000 diagnostics (**1,37 Mo**) injectés dans IndexedDB sur
-<https://baptistefaisy.github.io/rature/>, puis ouverture de l'écran Profil :
+<https://tradoooo.github.io/rature/>, puis ouverture de l'écran Profil :
 
 - chargement + rendu : **412 ms** (DOMContentLoaded 164 ms)
 - tas JS : **6 Mo**

@@ -94,8 +94,8 @@ type d'erreur au fil des copies.
 
 ## Liens
 
-- Démo : https://baptistefaisy.github.io/rature/
-- Code : https://github.com/BaptisteFaisy/rature
+- Démo : https://tradoooo.github.io/rature/
+- Code : https://github.com/Tradoooo/rature
 - Vidéo : _(à coller, lien public vérifié en navigation privée)_
 
 ## Équipe

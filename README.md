@@ -3,8 +3,8 @@
 > Tu photographies ta copie corrigée. Elle trouve l'erreur que tu répètes — et te fabrique
 > l'exercice exactement dessus.
 
-[![Démo publique](https://img.shields.io/badge/démo-publique-f5c518?style=flat-square)](https://baptistefaisy.github.io/rature/)
-[![CI](https://img.shields.io/github/actions/workflow/status/BaptisteFaisy/rature/ci.yml?branch=main&label=ci&style=flat-square)](https://github.com/BaptisteFaisy/rature/actions/workflows/ci.yml)
+[![Démo publique](https://img.shields.io/badge/démo-publique-f5c518?style=flat-square)](https://tradoooo.github.io/rature/)
+[![CI](https://img.shields.io/github/actions/workflow/status/Tradoooo/rature/ci.yml?branch=main&label=ci&style=flat-square)](https://github.com/Tradoooo/rature/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-171%20verts-3ecf8e?style=flat-square)](tests)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-9aa3b2?style=flat-square)](LICENSE)
 
@@ -12,7 +12,7 @@ Projet soumis à **IceHacks 2026** (CodeStarters, Devpost).
 
 ## Essayer tout de suite
 
-**<https://baptistefaisy.github.io/rature/>** — public, HTTPS, sans compte, sans installation.
+**<https://tradoooo.github.io/rature/>** — public, HTTPS, sans compte, sans installation.
 
 | Tu veux… | Fais |
 |---|---|
