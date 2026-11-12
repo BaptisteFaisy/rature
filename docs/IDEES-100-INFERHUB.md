@@ -59,6 +59,7 @@ Réduire le **nombre d'appels** rapporte bien plus que d'optimiser chacun d'eux.
 | 8 | Mode asynchrone | ✅ fait | « Continuer sans attendre », badge « analyse en cours » puis « diagnostic prêt » |
 | 9 | Arbitrage sur les préférences InferHub | ⚠️ **à faire par toi** | le proxy relaie désormais `x-max-input-price` / `x-max-output-price` si `RATURE_MAX_IN_PRICE` / `RATURE_MAX_OUT_PRICE` sont posées — mais avec la clé actuelle, l'enchère est **sans effet** (testé jusqu'à 0,5/3 : toujours 402). Le plafond est dans les préférences du compte |
 | 10 | Banc de latence horaire | ✅ fait | `scripts/sonder-latence.mjs` + `.github/workflows/latence.yml` → `docs/LATENCE.md` (branche `donnees/latence`) |
+| + | **Une preuve par étape** | ✅ fait | chaque étape publie ce qu'elle a produit (`Progression.preuve`) ; la trace reste visible dans l'écran Diagnostic |
 
 ## A. Disponibilité de l'amont (1-14)
 
