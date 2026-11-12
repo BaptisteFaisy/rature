@@ -55,6 +55,10 @@ jobs:
           git config user.name "BaptisteFaisy"
           git config user.email "baptiste.faisy@gmail.com"
           BRANCHE="donnees/latence"
+          # On ne force JAMAIS : un commit par heure sur la branche de données,
+          # l'historique des relevés reste lisible. (Un push forcé serait
+          # refusé par le garde `couche0`.)
+          cp docs/LATENCE.md /tmp/LATENCE.md 2>/dev/null || true
           git fetch origin "$BRANCHE" 2>/dev/null || true
           if git rev-parse --verify "origin/$BRANCHE" >/dev/null 2>&1; then
             git checkout -B "$BRANCHE" "origin/$BRANCHE"
@@ -63,10 +67,9 @@ jobs:
             git rm -rf --quiet . || true
           fi
           mkdir -p docs
-          cp docs/LATENCE.md /tmp/LATENCE.md 2>/dev/null || true
           [ -f /tmp/LATENCE.md ] && cp /tmp/LATENCE.md docs/LATENCE.md
           git add -f docs/LATENCE.md || true
           git commit -m "latence : relevé horaire $(date -u +%FT%TZ)" || echo "rien à publier"
-          git push --force "https://x-access-token:${PAT}@github.com/${{ github.repository }}.git" "$BRANCHE:$BRANCHE" \
+          git push "https://x-access-token:${PAT}@github.com/${{ github.repository }}.git" "$BRANCHE:$BRANCHE" \
             || echo "publication impossible (la branche sera mise à jour au prochain passage)"
           exit 0
