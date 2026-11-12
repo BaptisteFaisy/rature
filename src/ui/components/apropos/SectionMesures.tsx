@@ -32,14 +32,14 @@ const MESURES: { valeur: string; legende: string; source: string }[] = [
     source: 'démo publique de bout en bout, 11 nov. 22 h 27, sans clé côté navigateur.',
   },
   {
-    valeur: '≈ 110 Ko',
+    valeur: '≈ 112 Ko',
     legende: 'le bundle JavaScript compressé (gzip), React compris.',
     source: 'npx vite build, bundle mesuré sur dist/assets/ (±1 Ko selon l’état du dépôt).',
   },
   {
-    valeur: '94',
-    legende: 'tests verts sans réseau ni quota — le pipeline est rejouable en CI.',
-    source: 'npm test en CI : 13 fichiers passés, 3 bancs live ignorés sans clé.',
+    valeur: '170',
+    legende: 'tests verts sans réseau ni quota, dont 74 de crash test (données hostiles, volume, pannes).',
+    source: 'npm test en CI : 16 fichiers passés, 3 bancs live ignorés sans clé. Détails : docs/CRASH-TEST.md.',
   },
 ]
 

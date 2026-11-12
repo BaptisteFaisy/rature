@@ -12,12 +12,34 @@ import type { Diagnostic, Profil, Reglages } from '../domain/types'
 
 export const REGLAGES_VIDES: Reglages = { clePersonnelle: '', modele: '', proxy: '' }
 
+/** Un diagnostic lisible a un identifiant et une liste de fautes. */
+function diagnosticValide(valeur: unknown): valeur is Diagnostic {
+  if (typeof valeur !== 'object' || valeur === null) return false
+  const candidat = valeur as Partial<Diagnostic>
+  return typeof candidat.id === 'string' && Array.isArray(candidat.erreurs)
+}
+
+/**
+ * IndexedDB peut rendre n'importe quoi (écriture interrompue, données d'une
+ * version antérieure, quota) : on filtre au chargement plutôt que de laisser
+ * un écran planter.
+ */
 export async function chargerDiagnostics(): Promise<Diagnostic[]> {
-  return (await get<Diagnostic[]>(CLES.diagnostics)) ?? []
+  const brut = await get<unknown>(CLES.diagnostics)
+  if (!Array.isArray(brut)) return []
+  return brut.filter(diagnosticValide)
 }
 
 export async function chargerProfil(): Promise<Profil> {
-  return (await get<Profil>(CLES.profil)) ?? profilVide()
+  const brut = await get<Partial<Profil> | undefined>(CLES.profil)
+  const vide = profilVide()
+  if (!brut || typeof brut !== 'object') return vide
+  return {
+    parType: { ...vide.parType, ...(brut.parType ?? {}) },
+    totalAnalyses: typeof brut.totalAnalyses === 'number' ? brut.totalAnalyses : 0,
+    evolution: Array.isArray(brut.evolution) ? brut.evolution : [],
+    signalees: brut.signalees ?? {},
+  }
 }
 
 export async function enregistrerDiagnostic(diagnostic: Diagnostic): Promise<Profil> {

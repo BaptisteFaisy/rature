@@ -34,9 +34,14 @@ ORIGINES = [
     "http://127.0.0.1:5173",
 ]
 
-# Quota par conteneur (approximation assumée : un conteneur redémarre à zéro).
-PAR_IP_PAR_HEURE = 20
-GLOBAL_PAR_JOUR = 400
+# Quota **par conteneur**. Modal peut servir jusqu'à MAX_CONTENEURS instances en
+# parallèle, chacune avec sa mémoire : les plafonds nominaux sont donc divisés
+# d'autant pour que le total vu par un visiteur reste celui voulu.
+# (Mesuré le 12/11 : 25 appels parallèles n'ont déclenché aucun 429, la charge
+# étant répartie sur plusieurs conteneurs.)
+MAX_CONTENEURS = 4
+PAR_IP_PAR_HEURE = 20 // MAX_CONTENEURS      # 5 par conteneur → ~20/heure/visiteur
+GLOBAL_PAR_JOUR = 400 // MAX_CONTENEURS      # 100 par conteneur → ~400/jour
 
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
     "fastapi==0.115.*",
@@ -81,7 +86,7 @@ def _empreinte(ip: str) -> str:
     cpu=0.25,
     memory=256,
     scaledown_window=60,
-    max_containers=4,
+    max_containers=MAX_CONTENEURS,
 )
 @modal.asgi_app()
 def analyze():

@@ -20,6 +20,10 @@ export function profilVide(): Profil {
 
 /** Applique un diagnostic au profil sans jamais muter l'entrée. */
 export function agreger(profil: Profil, diagnostic: Diagnostic): Profil {
+  // Un historique local peut être abîmé (quota navigateur, version antérieure,
+  // écriture interrompue) : un diagnostic illisible est ignoré, jamais levé.
+  if (!diagnostic || !Array.isArray(diagnostic.erreurs)) return profil
+
   const parType = { ...profil.parType }
   const signalees = { ...profil.signalees }
 

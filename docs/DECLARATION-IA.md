@@ -49,7 +49,7 @@ Ce qui n'est **pas** généré :
 
 L'auteur peut expliquer chaque ligne du dépôt, chaque étape du pipeline, chaque règle du profil et
 chaque prompt. Une démonstration complémentaire peut être faite en direct : le produit tourne en
-local (`npm ci && npm run dev`), les 41 tests s'exécutent sans réseau ni quota (`npm test`), et le
+local (`npm ci && npm run dev`), les 170 tests s'exécutent sans réseau ni quota (`npm test`), et le
 corpus de démo permet de rejouer une analyse complète sans clé d'API.
 
 ## 5. Ce que le produit ne fait pas

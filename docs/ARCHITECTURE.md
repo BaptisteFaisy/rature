@@ -63,7 +63,7 @@ il sert de référence au banc de comparaison.
 
 Tout le pipeline parle à un `ClientBrut` (`src/pipeline/client.ts`), jamais à `fetch`. En
 production c'est `completer()` de `src/pipeline/llm.ts` ; en test c'est `clientSimule()`, qui rend
-des réponses JSON enregistrées. Conséquence : **41 tests tournent sans réseau ni quota**, et le
+des réponses JSON enregistrées. Conséquence : **170 tests tournent sans réseau ni quota**, et le
 corpus de validation est rejouable en CI.
 
 ## Le garde-fou de l'étape 6

@@ -16,6 +16,15 @@ export const SEUIL_REVUE = 0.75
 /** Au-delà de ce nombre, on ne reverra que les moins sûres (latence bornée). */
 export const MAX_FAUTES_A_REVOIR = 5
 
+/**
+ * Garde-fous d'entrée (crash test du 12/11) : un modèle peut rendre 10 000
+ * annotations, des lignes de 100 Ko ou des confiances absurdes. Sans plafond,
+ * l'UI gèle et le profil devient illisible. On borne, on ne refuse pas.
+ */
+export const MAX_ANNOTATIONS = 50
+export const MAX_LONGUEUR_LIGNE = 300
+export const MAX_LONGUEUR_TEXTE = 400
+
 /** §18.2 : budget total photo → résultat. */
 export const BUDGET_PIPELINE_MS = 20_000
 
