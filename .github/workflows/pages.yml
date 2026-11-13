@@ -24,7 +24,7 @@ concurrency:
 jobs:
   build:
     name: build-pages
-    runs-on: [self-hosted, linux, x64, rature-worker]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -32,15 +32,10 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Outillage Node
-        shell: bash
-        run: |
-          set -euo pipefail
-          export PATH="$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
-          echo "$HOME/bin" >> "$GITHUB_PATH"
-          node --version
-          npm --version
-
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - name: Dépendances
         shell: bash
         run: npm ci --prefer-offline --no-audit --no-fund
